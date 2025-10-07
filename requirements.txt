@@ -1,0 +1,12 @@
+uvicorn==0.27.1
+fastapi[all]
+dishka==1.7.2
+aiofiles==24.1.0
+sqladmin==0.20.1
+sqlalchemy==2.0.37
+python-jose==3.3.0
+passlib==1.7.4
+beautifulsoup4==4.12.3
+asyncpg==0.30.0
+alembic==1.13.1
+lxml==5.3.1

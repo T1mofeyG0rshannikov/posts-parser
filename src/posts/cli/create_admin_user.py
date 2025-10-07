@@ -3,7 +3,10 @@ from getpass import getpass
 
 from dishka import make_async_container
 
+from posts.ioc.db import DbProvider
 from posts.ioc.ioc import UsecasesProvider
+from posts.ioc.login import LoginProvider
+from posts.ioc.web import WebProvider
 from posts.usecases.create_user import CreateUser
 from posts.user.validate_password import validate_password
 
@@ -42,7 +45,7 @@ async def main():
     username = read_field(field_name="first name", valid_func=lambda un: len(un) > 0)
     password = read_field(field_name="password", valid_func=validate_password, read_func=getpass)
 
-    container = make_async_container(UsecasesProvider())
+    container = make_async_container(UsecasesProvider(), DbProvider(), LoginProvider(), WebProvider())
 
     async with container() as request_container:
         create_user = await request_container.get(CreateUser)
