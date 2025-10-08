@@ -1,6 +1,6 @@
 from posts.exceptions import PostNotFoundError
 from posts.interfaces.transaction import Transaction
-from posts.persistence.posts_data_mapper import PostDataMapper
+from posts.persistence.data_mappers.posts_data_mapper import PostDataMapper
 
 
 class ActivatePost:

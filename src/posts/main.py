@@ -11,6 +11,7 @@ from posts.ioc.login import LoginProvider
 from posts.ioc.web import WebProvider
 from posts.web.exc_handler import init_exc_handlers
 from posts.web.routes.posts_route import router as posts_router
+from posts.web.routes.tags_route import router as tags_router
 
 app = FastAPI()
 
@@ -19,6 +20,7 @@ admin_config = container.get(AdminConfig)
 
 app.add_middleware(SessionMiddleware, secret_key=admin_config.secret_key)
 app.include_router(router=posts_router)
+app.include_router(router=tags_router)
 init_admin(app)
 init_exc_handlers(app)
 

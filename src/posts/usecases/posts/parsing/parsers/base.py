@@ -3,7 +3,7 @@ import logging
 from concurrent.futures import ThreadPoolExecutor
 
 from posts.interfaces.transaction import Transaction
-from posts.persistence.posts_data_mapper import PostDataMapper
+from posts.persistence.data_mappers.tag_data_mapper import TagDataMapper
 from posts.usecases.posts.parsing.config import ParseConfig
 from posts.usecases.posts.parsing.db_writer_worker import DbWriterWorker
 from posts.usecases.posts.parsing.file_discoverers.base import FileDiscoverer
@@ -38,14 +38,16 @@ class ParsePosts:
     def __init__(
         self,
         config: ParseConfig,
-        data_mapper: PostDataMapper,
+        tag_data_mapper: TagDataMapper,
         file_discoverer: FileDiscoverer,
+        db_worker: DbWriterWorker,
         transaction: Transaction,
     ) -> None:
         self._config = config
         self._file_q: asyncio.Queue = asyncio.Queue(maxsize=config.FILE_QUEUE_MAX)
         self._parsed_q: asyncio.Queue = asyncio.Queue(maxsize=config.PARSED_QUEUE_MAX)
-        self._db_writer_worker = DbWriterWorker(parsed_q=self._parsed_q, posts_data_mapper=data_mapper, config=config)
+        db_worker.set_parsed_q(self._parsed_q)
+        self._db_writer_worker = db_worker
         self._executor = ThreadPoolExecutor(max_workers=self._config.N_PARSER_WORKERS)
         lock = asyncio.Lock()
         parsed_ids: set[int] = set()
@@ -55,15 +57,21 @@ class ParsePosts:
         ]
         self._file_discoverer = file_discoverer
         self._file_discoverer.bind_file_q(self._file_q)
+        self._tag_data_mapper = tag_data_mapper
         self._transaction = transaction
 
     async def __call__(self) -> None:
         import time
 
         start = time.time()
+
+        exist_tags = await self._tag_data_mapper.all()
+
+        tags_dict = {tag.slug: tag.id for tag in exist_tags}
+
         discover_task = asyncio.create_task(self._file_discoverer.discover())
         parser_tasks = [asyncio.create_task(parser_worker()) for parser_worker in self._parser_workers]
-        db_writer = asyncio.create_task(self._db_writer_worker())
+        db_writer = asyncio.create_task(self._db_writer_worker(tags_dict=tags_dict))
         await discover_task
         discover_task.done()
         await self._file_q.join()

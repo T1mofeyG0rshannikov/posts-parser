@@ -1,8 +1,9 @@
 from zipfile import ZipFile
 
 from posts.interfaces.transaction import Transaction
-from posts.persistence.posts_data_mapper import PostDataMapper
+from posts.persistence.data_mappers.tag_data_mapper import TagDataMapper
 from posts.usecases.posts.parsing.config import ParseConfig
+from posts.usecases.posts.parsing.db_writer_worker import DbWriterWorker
 from posts.usecases.posts.parsing.file_discoverers.zip_archive_discoverer import (
     ZIPDiscoverer,
 )
@@ -15,10 +16,19 @@ class ParsePostsFromZIP(ParsePosts):
     """
 
     def __init__(
-        self, config: ParseConfig, data_mapper: PostDataMapper, zip_discoverer: ZIPDiscoverer, transaction: Transaction
+        self,
+        config: ParseConfig,
+        db_worker: DbWriterWorker,
+        zip_discoverer: ZIPDiscoverer,
+        transaction: Transaction,
+        tag_data_mapper: TagDataMapper,
     ) -> None:
         super().__init__(
-            config=config, data_mapper=data_mapper, file_discoverer=zip_discoverer, transaction=transaction
+            config=config,
+            db_worker=db_worker,
+            tag_data_mapper=tag_data_mapper,
+            file_discoverer=zip_discoverer,
+            transaction=transaction,
         )
 
     async def __call__(self, zip_file: ZipFile) -> None:

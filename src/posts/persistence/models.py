@@ -24,15 +24,26 @@ class PostOrm(Model):
     tags = relationship("PostTagOrm", back_populates="post")
 
 
-class PostTagOrm(Model):
+class TagOrm(Model):
     __tablename__ = "tags"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String)
-    slug = Column(String)
+    slug = Column(String, unique=True)
+
+    posts = relationship("PostTagOrm", back_populates="tag")
+
+
+class PostTagOrm(Model):
+    __tablename__ = "posttags"
+
+    id = Column(Integer, primary_key=True, index=True)
 
     post_id = Column(Integer, ForeignKey("posts.id"))
     post = relationship(PostOrm, back_populates="tags")
+
+    tag_id = Column(Integer, ForeignKey("tags.id"))
+    tag = relationship(TagOrm, back_populates="posts")
 
 
 class UserOrm(Model):

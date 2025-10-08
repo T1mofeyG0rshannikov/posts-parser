@@ -8,8 +8,10 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
+from posts.persistence.data_mappers.posts_data_mapper import PostDataMapper
+from posts.persistence.data_mappers.tag_data_mapper import TagDataMapper
+from posts.persistence.data_mappers.user_data_mapper import UserDataMapper
 from posts.persistence.db.db_config import DbConfig
-from posts.persistence.user_data_mapper import UserDataMapper
 
 
 class DbProvider(Provider):
@@ -33,3 +35,11 @@ class DbProvider(Provider):
     @provide(scope=Scope.SESSION)
     async def get_user_data_mapper(self, session: AsyncSession) -> UserDataMapper:
         return UserDataMapper(session=session)
+
+    @provide(scope=Scope.SESSION)
+    async def get_post_data_mapper(self, session: AsyncSession) -> PostDataMapper:
+        return PostDataMapper(session=session)
+
+    @provide(scope=Scope.SESSION)
+    async def get_tag_data_mapper(self, session: AsyncSession) -> TagDataMapper:
+        return TagDataMapper(session=session)

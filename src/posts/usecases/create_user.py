@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from posts.exceptions import InvalidPasswordError, UserWithUsernameAlreadyExistError
-from posts.persistence.user_data_mapper import UserDataMapper
+from posts.persistence.data_mappers.user_data_mapper import UserDataMapper
 from posts.user.model import User
 from posts.user.password_hasher import PasswordHasher
 from posts.user.validate_password import validate_password

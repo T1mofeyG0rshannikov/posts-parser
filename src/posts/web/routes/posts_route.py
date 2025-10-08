@@ -23,15 +23,12 @@ async def get_zip_file(file: UploadFile) -> ZipFile:
 @inject
 async def parse_posts_handler(file: UploadFile, usecase: FromDishka[ParsePostsFromZIP]):
     zip_file = await get_zip_file(file)
-    result = await usecase(zip_file)
-    print(result, "result")
-    return {"success": True}
+    return await usecase(zip_file)
 
 
 @router.post("/active")
 @inject
 async def activate_post_handler(id: int, usecase: FromDishka[ActivatePost]):
-    print(id, type(id))
     return await usecase(id)
 
 

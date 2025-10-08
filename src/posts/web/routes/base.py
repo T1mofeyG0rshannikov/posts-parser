@@ -1,12 +1,14 @@
 from collections.abc import Callable
 from functools import wraps
+from typing import Annotated
 
-from dishka.integrations.fastapi import FromDishka
+from dishka.integrations.fastapi import FromDishka, inject
+from fastapi import Depends
 from starlette.requests import Request
 
 from posts.exceptions import NotPermittedError
+from posts.persistence.data_mappers.user_data_mapper import UserDataMapper
 from posts.persistence.models import UserOrm
-from posts.persistence.user_data_mapper import UserDataMapper
 from posts.user.auth.jwt_processor import JwtProcessor
 from posts.user.model import User
 
@@ -24,6 +26,7 @@ def admin_required(func: Callable) -> Callable:
     return wrapper(func)
 
 
+@inject
 async def get_user(
     request: Request,
     jwt_processor: FromDishka[JwtProcessor],
@@ -33,6 +36,9 @@ async def get_user(
     if token:
         payload = jwt_processor.validate_token(token)
         if payload:
-            return await user_data_mapper.get(payload["sub"])
+            return await user_data_mapper.get(payload["id"])
 
     return None
+
+
+UserAnnotation = Annotated[User, Depends(get_user)]

@@ -1,5 +1,5 @@
 from posts.exceptions import AccessDeniedError, InvalidPasswordError, UserNotFoundError
-from posts.persistence.user_data_mapper import UserDataMapper
+from posts.persistence.data_mappers.user_data_mapper import UserDataMapper
 from posts.user.access_token import AccessToken
 from posts.user.auth.jwt_processor import JwtProcessor
 from posts.user.password_hasher import PasswordHasher

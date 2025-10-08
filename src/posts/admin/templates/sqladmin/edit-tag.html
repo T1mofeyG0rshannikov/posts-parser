@@ -1,0 +1,147 @@
+{% extends "sqladmin/layout.html" %}
+{% from 'sqladmin/_macros.html' import render_form_fields %}
+{% block content %}
+<div class="col-12">
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Edit {{ model_view.name }}</h3>
+    </div>
+    <div class="card-body border-bottom py-3">
+        <style>
+          .tag{
+            display: inline-block;
+            background-color: #ECEAF8;
+            color: #79A1C5;
+            padding: 10px;
+            border-radius: 10px;
+            margin: 10px 1px;
+          }
+
+          .tag-remove {
+            cursor: pointer;
+            margin-left: 6px;
+            font-weight: bold;
+            color: #888;
+          }
+
+          .tag-remove:hover {
+            color: black;
+          }
+
+          select[name=tags]{
+            padding: 5px 10px;
+            width: auto;
+            max-width: calc(100% - 100px);
+            border: 1px solid rgb(180, 180, 180);
+            border-radius: 7px;
+          }
+          .add-tag{
+            background-color: rgb(210, 210, 210);
+            color: rgb(50, 50, 50);
+            border-radius: 7px;
+            padding: 5px 10px;
+            border: navajowhite;
+          }
+
+          #content, #content2{
+            height: 300px;
+          }
+
+        </style>
+        <div id="tags">
+          <div>
+            <p>Добавить тег</p>
+            <div>
+              <select name="tags" id=""></select>
+              <button class="add-tag" onclick="addTag()">Добавить</button>
+            </div>
+          </div>
+          <div class="tags-wrapper">
+            <script>
+              function addTag(){
+                tagId = document.querySelector("select[name=tags]").value
+                tagName = document.querySelector("select[name=tags]").selectedOptions[0].text
+                postId = {{ obj.id}}
+                console.log(tagId, postId)
+                fetch(`/tags/add-to-post?tag_id=${tagId}&post_id=${postId}`, {
+                  method: "POST",
+                }).then(response => {
+                  if (response.ok){
+                    newTag = document.createElement("div")
+                    newTag.classList.add("tag")
+                    newTag.innerHTML = `${ tagName }
+            <span class="tag-remove" onclick="deleteTag(${postId}, ${tagId}, this)">&times;</span>`;
+                    document.querySelector(".tags-wrapper").prepend(newTag);
+                  }
+                })
+              }
+
+              function fetchTags(){
+                fetch("/tags/all").then(response => {
+                  if (response.ok){
+                    response.json().then(response => {
+                      response.tags.forEach(tag => {
+                        document.querySelector("select[name=tags]").innerHTML += `<option value="${tag.id}">${tag.name}</option>`
+                      });
+                    })
+                  }
+                })
+              }
+
+              fetchTags()
+              function deleteTag(postId, tagId, elem){
+                fetch(`/tags/delete-relation?post_id=${postId}&tag_id=${tagId}`, {
+                  method: "DELETE"
+                }).then(response => {
+                  if (response.ok){
+                    elem.parentElement.remove()
+                  }
+                })
+              }
+              </script>
+          {% for tag in obj.tags %}
+          <div class="tag">
+            {{ tag.name }}
+            <span class="tag-remove" onclick="deleteTag({{obj.id}}, {{tag.id}}, this)">&times;</span>
+          </div>
+          {% endfor %}
+        </div>
+
+
+
+
+      <form action="{{ model_view._build_url_for('admin:edit', request, obj) }}" method="POST"
+        enctype="multipart/form-data">
+        <div class="row">
+          {% if error %}
+          <div class="alert alert-danger" role="alert">{{ error }}</div>
+          {% endif %}
+        </div>
+        <fieldset class="form-fieldset">
+          {{ render_form_fields(form, form_opts=form_opts) }}
+        </fieldset>
+        <div class="row">
+          <div class="col-md-2">
+            <a href="{{ url_for('admin:list', identity=model_view.identity) }}" class="btn">
+              Cancel
+            </a>
+          </div>
+          <div class="col-md-6">
+            <div class="btn-group flex-wrap" data-toggle="buttons">
+              <input type="submit" name="save" value="Save" class="btn">
+              <input type="submit" name="save" value="Save and continue editing" class="btn">
+              {% if model_view.can_create %}
+              {% if model_view.save_as %}
+              <input type="submit" name="save" value="Save as new" class="btn">
+              {% else %}
+              <input type="submit" name="save" value="Save and add another" class="btn">
+              {% endif %}
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

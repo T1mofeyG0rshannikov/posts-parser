@@ -24,3 +24,11 @@ class NotPermittedError(Exception):
 
 class PostNotFoundError(RecordNotFoundError):
     pass
+
+
+class TagNotFoundError(RecordNotFoundError):
+    pass
+
+
+class PostAlreadyHasTagError(Exception):
+    pass

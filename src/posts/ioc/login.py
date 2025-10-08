@@ -1,6 +1,6 @@
-from dishka import Provider, Scope, from_context, provide
+from dishka import Provider, Scope, provide
 
-from posts.persistence.user_data_mapper import UserDataMapper
+from posts.persistence.data_mappers.user_data_mapper import UserDataMapper
 from posts.usecases.login import Login
 from posts.user.auth.jwt_config import JwtConfig
 from posts.user.auth.jwt_processor import JwtProcessor

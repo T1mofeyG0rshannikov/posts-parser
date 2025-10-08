@@ -1,5 +1,7 @@
-from posts.persistence.posts_data_mapper import PostDataMapper
+from posts.interfaces.transaction import Transaction
+from posts.persistence.data_mappers.tag_data_mapper import TagDataMapper
 from posts.usecases.posts.parsing.config import ParseConfig
+from posts.usecases.posts.parsing.db_writer_worker import DbWriterWorker
 from posts.usecases.posts.parsing.file_discoverers.directory_discoverer.directory_discoverer import (
     DirectoryDiscoverer,
 )
@@ -12,6 +14,17 @@ class ParsePostsFromDirectory(ParsePosts):
     """
 
     def __init__(
-        self, config: ParseConfig, data_mapper: PostDataMapper, directory_discoverer: DirectoryDiscoverer
+        self,
+        config: ParseConfig,
+        directory_discoverer: DirectoryDiscoverer,
+        db_worker: DbWriterWorker,
+        tag_data_mapper: TagDataMapper,
+        transaction: Transaction,
     ) -> None:
-        super().__init__(config=config, data_mapper=data_mapper, file_discoverer=directory_discoverer)
+        super().__init__(
+            config=config,
+            tag_data_mapper=tag_data_mapper,
+            file_discoverer=directory_discoverer,
+            db_worker=db_worker,
+            transaction=transaction,
+        )

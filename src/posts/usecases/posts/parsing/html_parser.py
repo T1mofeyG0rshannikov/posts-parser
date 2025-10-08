@@ -4,7 +4,7 @@ from datetime import datetime
 
 from bs4 import BeautifulSoup
 
-from posts.usecases.posts.parsing.dto import ParsedPostDTO, ParsedPostTagDTO
+from posts.dto.parse_posts import ParsedPostDTO, ParsedPostTagDTO
 
 
 def parse_html(html: str) -> ParsedPostDTO:
@@ -21,7 +21,16 @@ def parse_html(html: str) -> ParsedPostDTO:
         for tag_element in tags_elems
     ]
 
+    date = datetime.strptime(soup.select_one("i.icon-calendar + a")["href"].split("/")[-1], "%Y-%M-%d")
+
     content = str(soup.select_one("#content"))
+    img_wrap = soup.select_one(".img_wrap")
+    parent = img_wrap.parent
+    img_wrap.decompose()
+
+    content = "".join(str(x) for x in parent.contents)
+    content = content.replace("""<div class="clear"></div>""", "")
+    content = content.replace("""K1 2019 adaptive""", "").strip()
 
     print_button = soup.select_one("#poteme + hr + a")
     match = re.search(r'href="([^"]*)"', str(print_button))
@@ -30,8 +39,6 @@ def parse_html(html: str) -> ParsedPostDTO:
     post_id = int(print_button_href.split("/")[2].split("-")[0])
     # post_id = random.randrange(1, 10_000_000)
     slug = print_button_href.split("/")[2].split("-")[1]
-
-    date = datetime.strptime(soup.select_one("i.icon-calendar + a")["href"].split("/")[-1], "%Y-%M-%d")
 
     return ParsedPostDTO(
         title=title,

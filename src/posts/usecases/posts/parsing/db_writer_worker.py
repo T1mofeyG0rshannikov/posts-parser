@@ -1,9 +1,10 @@
 import asyncio
 import logging
 
-from posts.persistence.posts_data_mapper import PostDataMapper
+from posts.dto.parse_posts import ParsedPostDTO
+from posts.persistence.data_mappers.posts_data_mapper import PostDataMapper
 from posts.usecases.posts.parsing.config import ParseConfig
-from posts.usecases.posts.parsing.dto import ParsedPostDTO
+from posts.usecases.posts.persist_posts import PersistPosts
 
 
 class DbWriterWorker:
@@ -19,12 +20,19 @@ class DbWriterWorker:
         posts_data_mapper (PostDataMapper): Класс для сохранения постов в базу данных.
     """
 
-    def __init__(self, parsed_q: asyncio.Queue, config: ParseConfig, posts_data_mapper: PostDataMapper) -> None:
-        self._parsed_q = parsed_q
+    def __init__(self, config: ParseConfig, persist_posts: PersistPosts, post_data_mapper: PostDataMapper) -> None:
+        self._parsed_q: asyncio.Queue | None = None
         self._config = config
-        self._data_mapper = posts_data_mapper
+        self._persist_posts = persist_posts
+        self._data_mapper = post_data_mapper
 
-    async def __call__(self) -> None:
+    def set_parsed_q(self, parsed_q: asyncio.Queue):
+        self._parsed_q = parsed_q
+
+    async def __call__(self, tags_dict: dict[str, int]) -> None:
+        if self._parsed_q is None:
+            raise ValueError("no parsed_q set")
+
         exist_posts = await self._data_mapper.all_ids()
         batch: list[ParsedPostDTO] = []
         shutdown_signals = 0
@@ -38,7 +46,7 @@ class DbWriterWorker:
 
                 if shutdown_signals >= self._config.N_PARSER_WORKERS:
                     if batch:
-                        await self._data_mapper.bulk_save(batch)
+                        await self._persist_posts(batch, tags_dict=tags_dict)
                         batch.clear()
                     logging.info("DB writer shutdown after %d signals", shutdown_signals)
                     break

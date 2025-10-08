@@ -7,6 +7,9 @@ class ParsedPostTagDTO:
     slug: str
     name: str
 
+    def __hash__(self):
+        return hash(self.slug)
+
 
 @dataclass
 class ParsedPostDTO:
