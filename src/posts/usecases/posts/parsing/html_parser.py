@@ -14,12 +14,13 @@ def parse_html(html: str) -> ParsedPostDTO:
     image = soup.select_one('link[rel="image_src"]')["href"]
     h1 = soup.find("h1").text
     description = soup.find("meta", attrs={"name": "description"})["content"]
-    tags_elems = soup.select_one("#poteme").find_all("a")
+    tags_elems = soup.find_all("a", class_="article-tag")
 
     tags = [
-        ParsedPostTagDTO(slug=tag_element["href"].split("/")[-1].split("-")[1], name=tag_element.text)
-        for tag_element in tags_elems
+        ParsedPostTagDTO(slug=tag_element["href"].split("/")[-1], name=tag_element.text) for tag_element in tags_elems
     ]
+
+    print(soup.select_one("i.icon-calendar + a")["href"].split("/")[-1], "date")
 
     date = datetime.strptime(soup.select_one("i.icon-calendar + a")["href"].split("/")[-1], "%Y-%M-%d")
 
@@ -31,6 +32,10 @@ def parse_html(html: str) -> ParsedPostDTO:
     content = "".join(str(x) for x in parent.contents)
     content = content.replace("""<div class="clear"></div>""", "")
     content = content.replace("""K1 2019 adaptive""", "").strip()
+    idx = content.rfind("</p>")
+
+    if idx != -1:
+        content = content[: idx + len("</p>")]  # обрезаем до конца </p>
 
     print_button = soup.select_one("#poteme + hr + a")
     match = re.search(r'href="([^"]*)"', str(print_button))
@@ -38,7 +43,7 @@ def parse_html(html: str) -> ParsedPostDTO:
 
     post_id = int(print_button_href.split("/")[2].split("-")[0])
     # post_id = random.randrange(1, 10_000_000)
-    slug = print_button_href.split("/")[2].split("-")[1]
+    slug = re.sub(r"^\d+-", "", print_button_href.split("/")[2])
 
     return ParsedPostDTO(
         title=title,
