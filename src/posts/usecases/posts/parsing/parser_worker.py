@@ -58,6 +58,7 @@ class ParserWorker:
             parsed = await loop.run_in_executor(self._executor, parse_html, html)
 
             async with self._lock:
+                print(parsed.id, self._parsed_ids)
                 if parsed.id not in self._parsed_ids:
                     await self._parsed_q.put(parsed)
                     self._parsed_ids.add(parsed.id)

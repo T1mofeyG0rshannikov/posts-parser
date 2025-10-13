@@ -22,7 +22,7 @@ def parse_html(html: str) -> ParsedPostDTO:
 
     #   print(soup.select_one("i.icon-calendar + a")["href"].split("/")[-1], "date")
 
-    date = datetime.strptime(soup.select_one("i.icon-calendar + a")["href"].split("/")[-1], "%Y-%M-%d")
+    date = datetime.strptime(soup.select_one("i.icon-calendar + a")["href"].split("/")[-1], "%Y-%m-%d").time()
 
     content = str(soup.select_one("#content"))
     img_wrap = soup.select_one(".img_wrap")
