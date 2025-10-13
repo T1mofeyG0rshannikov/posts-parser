@@ -20,7 +20,7 @@ def parse_html(html: str) -> ParsedPostDTO:
         ParsedPostTagDTO(slug=tag_element["href"].split("/")[-1], name=tag_element.text) for tag_element in tags_elems
     ]
 
-    print(soup.select_one("i.icon-calendar + a")["href"].split("/")[-1], "date")
+    #   print(soup.select_one("i.icon-calendar + a")["href"].split("/")[-1], "date")
 
     date = datetime.strptime(soup.select_one("i.icon-calendar + a")["href"].split("/")[-1], "%Y-%M-%d")
 

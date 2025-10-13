@@ -23,7 +23,7 @@ class ParserWorker:
         parsed_q (asyncio.Queue): Очередь для результатов парсинга.
         lock (asyncio.Lock): Замок для синхронизации работы с _parsed_ids.
         parsed_ids (set[int]): Множество ID уже спарсенных постов.
-
+        skipped (int): Кол-во пропущенных постов(дубликаты)
     Methods:
         call(): Основной цикл воркера, извлекает задачи из очереди, парсит HTML и сохраняет результат.
     """
@@ -44,7 +44,7 @@ class ParserWorker:
         self._lock = lock
         self._parsed_ids = parsed_ids
 
-    async def __call__(self) -> None:
+    async def __call__(self, skipped_callback) -> None:
         loop = asyncio.get_running_loop()
 
         while True:
@@ -61,4 +61,7 @@ class ParserWorker:
                 if parsed.id not in self._parsed_ids:
                     await self._parsed_q.put(parsed)
                     self._parsed_ids.add(parsed.id)
+                else:
+                    await skipped_callback()
+
             self._file_q.task_done()

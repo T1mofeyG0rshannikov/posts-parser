@@ -72,9 +72,11 @@
               fetch("/posts/parse", {
                   method: "POST",
                   body: formData
-              }).then(resposne => {
-                  if (resposne.status === 200){
-                      messageContainer.innerHTML = "Данные добавились! Обновите страницу, чтобы увидеть их"
+              }).then(response => {
+                  if (response.status === 200){
+                      response.json().then(response => {
+                        messageContainer.innerHTML =  `<p>Данные добавились! Обновите страницу, чтобы увидеть их</p><p>Добавлено постов: ${response.inserted}</p><p>Пропущено постов (дубликаты): ${response.skipped}</p>`
+                      })
                   }
                   else{
                       messageContainer.classList.add("error")

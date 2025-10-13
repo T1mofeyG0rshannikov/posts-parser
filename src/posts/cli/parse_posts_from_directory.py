@@ -15,8 +15,10 @@ async def main():
 
     async with container() as request_container:
         parse_posts = await request_container.get(ParsePostsFromDirectory)
-
-        await parse_posts()
+        print("Начало парсинга...")
+        parse_response = await parse_posts()
+        print(f"Пропущено постов (дубликаты): {parse_response.skipped}")
+        print(f"Добавлено постов: {parse_response.inserted}")
 
 
 if __name__ == "__main__":

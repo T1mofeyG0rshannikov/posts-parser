@@ -24,3 +24,9 @@ class ParsedPostDTO:
     slug: str
     tags: list[ParsedPostTagDTO]
     active: bool
+
+
+@dataclass
+class ParseUsecaseResponse:
+    skipped: int
+    inserted: int

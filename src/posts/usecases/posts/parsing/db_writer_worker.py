@@ -29,7 +29,7 @@ class DbWriterWorker:
     def set_parsed_q(self, parsed_q: asyncio.Queue):
         self._parsed_q = parsed_q
 
-    async def __call__(self, tags_dict: dict[str, int]) -> None:
+    async def __call__(self, tags_dict: dict[str, int], skipped_callback, inserted_callback) -> None:
         if self._parsed_q is None:
             raise ValueError("no parsed_q set")
 
@@ -46,14 +46,21 @@ class DbWriterWorker:
 
                 if shutdown_signals >= self._config.N_PARSER_WORKERS:
                     if batch:
-                        await self._persist_posts(batch, tags_dict=tags_dict)
-                        batch.clear()
+                        try:
+                            await self._persist_posts(batch, tags_dict=tags_dict)
+                            await inserted_callback(value=len(batch), in_lock=True)
+                            batch.clear()
+                        except Exception as e:
+                            print(e)
                     logging.info("DB writer shutdown after %d signals", shutdown_signals)
                     break
                 continue
 
             if item.id not in exist_posts:
                 batch.append(item)
+            else:
+                await skipped_callback(in_lock=True)
+
             self._parsed_q.task_done()
 
             if len(batch) >= self._config.BATCH_SIZE:
