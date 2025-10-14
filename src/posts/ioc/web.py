@@ -2,6 +2,7 @@ from dishka import Provider, Scope, provide
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from posts.persistence.data_mappers.tag_data_mapper import TagDataMapper
+from posts.services import DbLogger
 from posts.usecases.posts.parsing.config import ParseConfig
 from posts.usecases.posts.parsing.db_writer_worker import DbWriterWorker
 from posts.usecases.posts.parsing.file_discoverers.zip_archive_discoverer import (
@@ -23,6 +24,7 @@ class WebProvider(Provider):
         db_worker: DbWriterWorker,
         tag_data_mapper: TagDataMapper,
         zip_archive_discoverer: ZIPDiscoverer,
+        logger: DbLogger,
     ) -> ParsePostsFromZIP:
         return ParsePostsFromZIP(
             config=parse_config,
@@ -30,4 +32,5 @@ class WebProvider(Provider):
             tag_data_mapper=tag_data_mapper,
             zip_discoverer=zip_archive_discoverer,
             transaction=session,
+            logger=logger,
         )

@@ -19,6 +19,7 @@ async def main():
         parse_response = await parse_posts()
         print(f"Пропущено постов (дубликаты): {parse_response.skipped}")
         print(f"Добавлено постов: {parse_response.inserted}")
+        print(f"Неправильных постов: {parse_response.invalid}")
 
 
 if __name__ == "__main__":

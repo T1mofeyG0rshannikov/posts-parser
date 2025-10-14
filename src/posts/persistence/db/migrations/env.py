@@ -7,7 +7,7 @@ from sqlalchemy import engine_from_config, pool
 from posts.ioc.db import DbProvider
 from posts.persistence.db.database import Model
 from posts.persistence.db.db_config import DbConfig
-from posts.persistence.models import * # type: ignore
+from posts.persistence.models import *  # type: ignore
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

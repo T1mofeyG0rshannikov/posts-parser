@@ -6,9 +6,11 @@ from posts.admin.admin import CustomAdmin
 from posts.admin.auth.backend import AdminAuth
 from posts.admin.auth.login_factory.dishka_login_factory import DishkaLoginFactory
 from posts.admin.config import AdminConfig
+from posts.persistence.data_mappers.error_log_data_mapper import ErrorLogDataMapper
 from posts.persistence.data_mappers.posts_data_mapper import PostDataMapper
 from posts.persistence.data_mappers.tag_data_mapper import TagDataMapper
 from posts.persistence.data_mappers.user_data_mapper import UserDataMapper
+from posts.services import DbLogger
 from posts.usecases.create_user import CreateUser
 from posts.usecases.posts.avtivate import ActivatePost
 from posts.usecases.posts.deavtivate import DeactivatePost
@@ -51,6 +53,10 @@ class UsecasesProvider(Provider):
         return DirectoryDiscoverer(config=directory_discoverer_config, n_parser_workers=parse_config.N_PARSER_WORKERS)
 
     @provide(scope=Scope.SESSION)
+    def get_db_logger(self, error_log_data_mapper: ErrorLogDataMapper, transaction: AsyncSession) -> DbLogger:
+        return DbLogger(error_log_data_mapper=error_log_data_mapper, transaction=transaction)
+
+    @provide(scope=Scope.SESSION)
     def get_parse_posts_from_directory_interactor(
         self,
         parse_config: ParseConfig,
@@ -58,6 +64,7 @@ class UsecasesProvider(Provider):
         directory_discoverer: DirectoryDiscoverer,
         transaction: AsyncSession,
         db_worker: DbWriterWorker,
+        logger: DbLogger,
     ) -> ParsePostsFromDirectory:
         return ParsePostsFromDirectory(
             config=parse_config,
@@ -65,6 +72,7 @@ class UsecasesProvider(Provider):
             directory_discoverer=directory_discoverer,
             transaction=transaction,
             db_worker=db_worker,
+            logger=logger,
         )
 
     @provide(scope=Scope.SESSION)

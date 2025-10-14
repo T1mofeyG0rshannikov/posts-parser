@@ -1,4 +1,17 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Text, Time
+from datetime import datetime
+
+import pytz
+from sqlalchemy import (
+    TIMESTAMP,
+    Boolean,
+    Column,
+    Date,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    Time,
+)
 from sqlalchemy.orm import relationship
 
 from posts.persistence.db.database import Model
@@ -11,7 +24,8 @@ class PostOrm(Model):
 
     title = Column(String)
     description = Column(String)
-    published = Column(Time)
+
+    published = Column(Date)
 
     h1 = Column(String)
     image = Column(String)
@@ -56,3 +70,12 @@ class UserOrm(Model):
 
     def __str__(self) -> str:
         return self.username
+
+
+class ErrorLogOrm(Model):
+    __tablename__ = "errorlog"
+
+    id = Column(Integer, index=True, primary_key=True)
+    title = Column(String)
+    message = Column(String)
+    created_at = Column(TIMESTAMP(timezone=True), default=lambda: datetime.now(pytz.timezone("Europe/Moscow")))

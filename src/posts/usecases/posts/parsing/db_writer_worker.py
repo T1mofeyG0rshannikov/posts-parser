@@ -56,13 +56,16 @@ class DbWriterWorker:
                     break
                 continue
 
-            if item.id not in exist_posts:
-                batch.append(item)
+            if item == 0:
+                self._parsed_q.task_done()
             else:
-                await skipped_callback(in_lock=True)
+                if item.id not in exist_posts:
+                    batch.append(item)
+                else:
+                    await skipped_callback(in_lock=True)
 
-            self._parsed_q.task_done()
+                self._parsed_q.task_done()
 
-            if len(batch) >= self._config.BATCH_SIZE:
-                await self._data_mapper.bulk_save(batch)
-                batch.clear()
+                if len(batch) >= self._config.BATCH_SIZE:
+                    await self._data_mapper.bulk_save(batch)
+                    batch.clear()

@@ -1,7 +1,10 @@
 import asyncio
 import logging
+import sys
+import traceback
 from concurrent.futures import ThreadPoolExecutor
 
+from posts.interfaces.logger import Logger
 from posts.usecases.posts.parsing.html_parser import parse_html
 
 
@@ -36,6 +39,7 @@ class ParserWorker:
         parsed_q: asyncio.Queue,
         lock: asyncio.Lock,
         parsed_ids: set[int],
+        logger: Logger,
     ) -> None:
         self._name = name
         self._executor = executor
@@ -43,8 +47,9 @@ class ParserWorker:
         self._parsed_q = parsed_q
         self._lock = lock
         self._parsed_ids = parsed_ids
+        self._logger = logger
 
-    async def __call__(self, skipped_callback) -> None:
+    async def __call__(self, skipped_callback, invalid_callback) -> None:
         loop = asyncio.get_running_loop()
 
         while True:
@@ -55,7 +60,17 @@ class ParserWorker:
                 logging.info("Parser %s got shutdown", self._name)
                 break
 
-            parsed = await loop.run_in_executor(self._executor, parse_html, html)
+            parsed_response = await loop.run_in_executor(self._executor, parse_html, html)
+            if not parsed_response.success:
+                await self._parsed_q.put(0)
+                await invalid_callback(in_lock=True)
+                await self._logger.log(
+                    title=f"Не удалось добавить пост с id {parsed_response.data}", message=parsed_response.error_message
+                )
+                self._file_q.task_done()
+                continue
+
+            parsed = parsed_response.data
 
             async with self._lock:
                 print(parsed.id, self._parsed_ids)

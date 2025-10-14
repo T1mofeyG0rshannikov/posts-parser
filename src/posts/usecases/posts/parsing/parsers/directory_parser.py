@@ -1,3 +1,4 @@
+from posts.interfaces.logger import Logger
 from posts.interfaces.transaction import Transaction
 from posts.persistence.data_mappers.tag_data_mapper import TagDataMapper
 from posts.usecases.posts.parsing.config import ParseConfig
@@ -20,6 +21,7 @@ class ParsePostsFromDirectory(ParsePosts):
         db_worker: DbWriterWorker,
         tag_data_mapper: TagDataMapper,
         transaction: Transaction,
+        logger: Logger,
     ) -> None:
         super().__init__(
             config=config,
@@ -27,4 +29,5 @@ class ParsePostsFromDirectory(ParsePosts):
             file_discoverer=directory_discoverer,
             db_worker=db_worker,
             transaction=transaction,
+            logger=logger,
         )

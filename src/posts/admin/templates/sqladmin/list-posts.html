@@ -75,7 +75,7 @@
               }).then(response => {
                   if (response.status === 200){
                       response.json().then(response => {
-                        messageContainer.innerHTML =  `<p>Данные добавились! Обновите страницу, чтобы увидеть их</p><p>Добавлено постов: ${response.inserted}</p><p>Пропущено постов (дубликаты): ${response.skipped}</p>`
+                        messageContainer.innerHTML =  `<p>Данные добавились! Обновите страницу, чтобы увидеть их</p><p>Добавлено постов: ${response.inserted}</p><p>Пропущено постов (дубликаты): ${response.skipped}</p><p>Неправильных постов: ${response.invalid}</p>`
                       })
                   }
                   else{

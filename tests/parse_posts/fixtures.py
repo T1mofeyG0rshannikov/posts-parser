@@ -1,8 +1,10 @@
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from posts.persistence.data_mappers.error_log_data_mapper import ErrorLogDataMapper
 from posts.persistence.data_mappers.posts_data_mapper import PostDataMapper
 from posts.persistence.data_mappers.tag_data_mapper import TagDataMapper
+from posts.services import DbLogger
 from posts.usecases.posts.parsing.config import ParseConfig
 from posts.usecases.posts.parsing.db_writer_worker import DbWriterWorker
 from posts.usecases.posts.parsing.file_discoverers.directory_discoverer.directory_discoverer import (
@@ -56,12 +58,23 @@ def directory_discoverer(parse_config: ParseConfig) -> DirectoryDiscoverer:
 
 
 @pytest.fixture
+def error_log_data_mapper(db: AsyncSession) -> ErrorLogDataMapper:
+    return ErrorLogDataMapper(db)
+
+
+@pytest.fixture
+def logger(error_log_data_mapper: ErrorLogDataMapper, db: AsyncSession) -> DbLogger:
+    return DbLogger(error_log_data_mapper=error_log_data_mapper, transaction=db)
+
+
+@pytest.fixture
 def parse_posts_from_zip(
     parse_config: ParseConfig,
     db_worker: DbWriterWorker,
     zip_discoverer: ZIPDiscoverer,
     db: AsyncSession,
     tag_data_mapper: TagDataMapper,
+    logger: DbLogger,
 ) -> ParsePostsFromZIP:
     return ParsePostsFromZIP(
         config=parse_config,
@@ -69,6 +82,7 @@ def parse_posts_from_zip(
         zip_discoverer=zip_discoverer,
         transaction=db,
         tag_data_mapper=tag_data_mapper,
+        logger=logger,
     )
 
 
@@ -79,6 +93,7 @@ def parse_posts_from_directory(
     directory_discoverer: DirectoryDiscoverer,
     db: AsyncSession,
     tag_data_mapper: TagDataMapper,
+    logger: DbLogger,
 ) -> ParsePostsFromDirectory:
     return ParsePostsFromDirectory(
         config=parse_config,
@@ -86,4 +101,5 @@ def parse_posts_from_directory(
         directory_discoverer=directory_discoverer,
         transaction=db,
         tag_data_mapper=tag_data_mapper,
+        logger=logger,
     )

@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
+from posts.persistence.data_mappers.error_log_data_mapper import ErrorLogDataMapper
 from posts.persistence.data_mappers.posts_data_mapper import PostDataMapper
 from posts.persistence.data_mappers.tag_data_mapper import TagDataMapper
 from posts.persistence.data_mappers.user_data_mapper import UserDataMapper
@@ -43,3 +44,7 @@ class DbProvider(Provider):
     @provide(scope=Scope.SESSION)
     async def get_tag_data_mapper(self, session: AsyncSession) -> TagDataMapper:
         return TagDataMapper(session=session)
+
+    @provide(scope=Scope.SESSION)
+    async def get_error_log__data_mapper(self, session: AsyncSession) -> ErrorLogDataMapper:
+        return ErrorLogDataMapper(session=session)

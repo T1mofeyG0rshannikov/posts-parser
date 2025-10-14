@@ -30,3 +30,4 @@ class ParsedPostDTO:
 class ParseUsecaseResponse:
     skipped: int
     inserted: int
+    invalid: int

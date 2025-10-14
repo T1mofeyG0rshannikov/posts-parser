@@ -1,1 +1,1 @@
-from fixtures.db import * # type: ignore
+from fixtures.db import *  # type: ignore

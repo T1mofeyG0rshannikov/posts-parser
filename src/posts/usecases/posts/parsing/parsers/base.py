@@ -5,6 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Literal
 
 from posts.dto.parse_posts import ParseUsecaseResponse
+from posts.interfaces.logger import Logger
 from posts.interfaces.transaction import Transaction
 from posts.persistence.data_mappers.tag_data_mapper import TagDataMapper
 from posts.usecases.posts.parsing.config import ParseConfig
@@ -45,19 +46,22 @@ class ParsePosts:
         file_discoverer: FileDiscoverer,
         db_worker: DbWriterWorker,
         transaction: Transaction,
+        logger: Logger,
     ) -> None:
         self._config = config
         self._file_q: asyncio.Queue = asyncio.Queue(maxsize=config.FILE_QUEUE_MAX)
         self._parsed_q: asyncio.Queue = asyncio.Queue(maxsize=config.PARSED_QUEUE_MAX)
         db_worker.set_parsed_q(self._parsed_q)
         self._db_writer_worker = db_worker
-
+        self._logger = logger
         self._executor = ThreadPoolExecutor(max_workers=self._config.N_PARSER_WORKERS)
         lock = asyncio.Lock()
         self._lock = lock
         parsed_ids: set[int] = set()
         self._parser_workers = [
-            ParserWorker(i, self._executor, self._file_q, self._parsed_q, lock=lock, parsed_ids=parsed_ids)
+            ParserWorker(
+                i, self._executor, self._file_q, self._parsed_q, lock=lock, parsed_ids=parsed_ids, logger=logger
+            )
             for i in range(self._config.N_PARSER_WORKERS)
         ]
         self._file_discoverer = file_discoverer
@@ -65,9 +69,12 @@ class ParsePosts:
         self._tag_data_mapper = tag_data_mapper
         self._transaction = transaction
         self._skipped = 0
+        self._invalid = 0
         self._inserted = 0
 
-    async def _increment_counter(self, counter: Literal["inserted", "skipped"], in_lock: bool, value: int) -> None:
+    async def _increment_counter(
+        self, counter: Literal["inserted", "skipped", "invalid"], in_lock: bool, value: int
+    ) -> None:
         attr_name = f"_{counter}"
         if in_lock:
             async with self._lock:
@@ -81,6 +88,9 @@ class ParsePosts:
     async def increment_inserted(self, value: int = 1, in_lock=False):
         await self._increment_counter(counter="inserted", value=value, in_lock=in_lock)
 
+    async def increment_invalid(self, value: int = 1, in_lock=False):
+        await self._increment_counter(counter="invalid", value=value, in_lock=in_lock)
+
     async def __call__(self) -> ParseUsecaseResponse:
         start = time.time()
 
@@ -90,7 +100,9 @@ class ParsePosts:
 
         discover_task = asyncio.create_task(self._file_discoverer.discover())
         parser_tasks = [
-            asyncio.create_task(parser_worker(skipped_callback=self.increment_skipped))
+            asyncio.create_task(
+                parser_worker(skipped_callback=self.increment_skipped, invalid_callback=self.increment_invalid)
+            )
             for parser_worker in self._parser_workers
         ]
         db_writer = asyncio.create_task(
@@ -110,4 +122,4 @@ class ParsePosts:
         print(time.time() - start)
         logging.info("All done")
 
-        return ParseUsecaseResponse(skipped=self._skipped, inserted=self._inserted)
+        return ParseUsecaseResponse(skipped=self._skipped, inserted=self._inserted, invalid=self._invalid)

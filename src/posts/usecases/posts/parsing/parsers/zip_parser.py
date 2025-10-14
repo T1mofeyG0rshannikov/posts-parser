@@ -2,6 +2,7 @@ from zipfile import ZipFile
 
 from posts.interfaces.transaction import Transaction
 from posts.persistence.data_mappers.tag_data_mapper import TagDataMapper
+from posts.services import DbLogger
 from posts.usecases.posts.parsing.config import ParseConfig
 from posts.usecases.posts.parsing.db_writer_worker import DbWriterWorker
 from posts.usecases.posts.parsing.file_discoverers.zip_archive_discoverer import (
@@ -22,6 +23,7 @@ class ParsePostsFromZIP(ParsePosts):
         zip_discoverer: ZIPDiscoverer,
         transaction: Transaction,
         tag_data_mapper: TagDataMapper,
+        logger: DbLogger,
     ) -> None:
         super().__init__(
             config=config,
@@ -29,6 +31,7 @@ class ParsePostsFromZIP(ParsePosts):
             tag_data_mapper=tag_data_mapper,
             file_discoverer=zip_discoverer,
             transaction=transaction,
+            logger=logger,
         )
 
     async def __call__(self, zip_file: ZipFile) -> None:
