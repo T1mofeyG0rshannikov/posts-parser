@@ -1,5 +1,5 @@
+from posts.dto.post import Tag
 from posts.persistence.data_mappers.tag_data_mapper import TagDataMapper
-from posts.posts.models import Tag
 
 
 class GetAllTags:

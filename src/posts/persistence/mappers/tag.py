@@ -1,7 +1,7 @@
+from posts.dto.post import Tag, TagWithPosts
 from posts.dto.post_tag_relation import PostTagRelation
 from posts.persistence.mappers.post import from_orm_to_post
 from posts.persistence.models import PostTagOrm, TagOrm
-from posts.posts.models import Tag, TagWithPosts
 
 
 def from_orm_to_tag(tag: TagOrm) -> Tag:

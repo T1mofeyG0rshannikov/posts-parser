@@ -2,6 +2,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import selectinload
 
 from posts.dto.parse_posts import ParsedPostTagDTO
+from posts.dto.post import Tag, TagWithPosts
 from posts.dto.post_tag_relation import PostTagRelation
 from posts.persistence.data_mappers.base import BaseDataMapper
 from posts.persistence.mappers.tag import (
@@ -10,7 +11,6 @@ from posts.persistence.mappers.tag import (
     from_orm_to_tag_with_posts,
 )
 from posts.persistence.models import PostTagOrm, TagOrm
-from posts.posts.models import Tag, TagWithPosts
 
 
 class TagDataMapper(BaseDataMapper):

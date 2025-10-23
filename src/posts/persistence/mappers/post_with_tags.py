@@ -1,5 +1,5 @@
+from posts.dto.post import PostWithTags, Tag
 from posts.persistence.models import PostOrm
-from posts.posts.models import PostWithTags, Tag
 
 
 def from_orm_to_post_with_tags(post: PostOrm) -> PostWithTags:

@@ -34,7 +34,7 @@ def parse_html(html: str) -> ParseHtmlResponse:
         tags_elems = soup.find_all("a", class_="article-tag")
 
         tags = [
-            ParsedPostTagDTO(slug=tag_element["href"].split("/")[-1], name=tag_element.text)
+            ParsedPostTagDTO(slug=tag_element["href"].split("/")[-1].lower(), name=tag_element.text)
             for tag_element in tags_elems
         ]
 
@@ -57,6 +57,8 @@ def parse_html(html: str) -> ParseHtmlResponse:
         if idx != -1:
             content = content[: idx + len("</p>")]  # обрезаем до конца </p>
 
+        content2 = str(soup)
+
         # post_id = random.randrange(1, 10_000_000)
         slug = re.sub(r"^\d+-", "", print_button_href.split("/")[2])
 
@@ -69,7 +71,7 @@ def parse_html(html: str) -> ParseHtmlResponse:
                 description=description,
                 tags=tags,
                 content=content,
-                content2=content,
+                content2=content2,
                 id=post_id,
                 slug=slug,
                 published=date,

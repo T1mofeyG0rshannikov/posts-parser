@@ -1,5 +1,5 @@
+from posts.dto.post import Post
 from posts.persistence.models import PostOrm
-from posts.posts.models import Post
 
 
 def from_orm_to_post(post: PostOrm) -> Post:

@@ -5,6 +5,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from posts.admin.config import AdminConfig
 from posts.admin.init import init_admin
+from posts.di import get_container
 from posts.ioc.db import DbProvider
 from posts.ioc.ioc import UsecasesProvider
 from posts.ioc.login import LoginProvider
@@ -15,7 +16,7 @@ from posts.web.routes.tags_route import router as tags_router
 
 app = FastAPI()
 
-container = make_container(UsecasesProvider(), DbProvider(), LoginProvider())
+container = get_container(app)
 admin_config = container.get(AdminConfig)
 
 app.add_middleware(SessionMiddleware, secret_key=admin_config.secret_key)

@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from posts.posts.models import Tag
+from posts.dto.post import Tag
 
 
 class AllTagsResponse(BaseModel):

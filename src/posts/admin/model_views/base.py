@@ -51,11 +51,15 @@ class BaseModelView(ModelView):
         page = self.validate_page_number(request.query_params.get("page"), 1)
         page_size = self.validate_page_number(request.query_params.get("pageSize"), 0)
         page_size = min(page_size or self.page_size, max(self.page_size_options))
+        search = request.query_params.get("search", None)
 
         stmt = self.list_query(request).filter(self.filters_from_request(request))
         for relation in self._list_relations:
             stmt = stmt.options(selectinload(relation))
             stmt = stmt.join(relation)
+
+        if search:
+            stmt = self.search_query(stmt=stmt, term=search)
 
         count = await self.count(request, select(func.count()).select_from(stmt))
         stmt = self.sort_query(stmt, request)

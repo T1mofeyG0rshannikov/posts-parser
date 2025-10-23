@@ -2,9 +2,9 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from posts.persistence.data_mappers.error_log_data_mapper import ErrorLogDataMapper
-from posts.persistence.data_mappers.posts_data_mapper import PostDataMapper
+from posts.persistence.data_mappers.post_data_mapper import PostDataMapper
 from posts.persistence.data_mappers.tag_data_mapper import TagDataMapper
-from posts.services import DbLogger
+from posts.services.logger import DbLogger
 from posts.usecases.posts.parsing.config import ParseConfig
 from posts.usecases.posts.parsing.db_writer_worker import DbWriterWorker
 from posts.usecases.posts.parsing.file_discoverers.directory_discoverer.directory_discoverer import (

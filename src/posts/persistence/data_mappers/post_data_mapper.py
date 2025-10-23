@@ -1,18 +1,18 @@
 from dataclasses import asdict
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import joinedload
 
 from posts.dto.parse_posts import ParsedPostDTO
+from posts.dto.post import Post, PostWithTags
 from posts.persistence.data_mappers.base import BaseDataMapper
 from posts.persistence.mappers.post_with_tags import from_orm_to_post_with_tags
 from posts.persistence.models import PostOrm, PostTagOrm
-from posts.posts.models import Post, PostWithTags
 
 
 class PostDataMapper(BaseDataMapper):
-    async def save(self, post: PostOrm) -> None:
-        self._session.refresh(post)
+    async def save(self, post: Post) -> None:
+        await self._session.execute(update(PostOrm).where(PostOrm.id == post.id).values(active=post.active))
 
     async def get(self, id: int) -> PostOrm | None:
         result = await self._session.execute(select(PostOrm).where(PostOrm.id == id))

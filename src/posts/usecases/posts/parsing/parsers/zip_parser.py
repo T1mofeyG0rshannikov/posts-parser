@@ -2,7 +2,7 @@ from zipfile import ZipFile
 
 from posts.interfaces.transaction import Transaction
 from posts.persistence.data_mappers.tag_data_mapper import TagDataMapper
-from posts.services import DbLogger
+from posts.services.logger import DbLogger
 from posts.usecases.posts.parsing.config import ParseConfig
 from posts.usecases.posts.parsing.db_writer_worker import DbWriterWorker
 from posts.usecases.posts.parsing.file_discoverers.zip_archive_discoverer import (

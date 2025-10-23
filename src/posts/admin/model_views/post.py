@@ -7,8 +7,8 @@ from sqladmin import action
 from sqlalchemy import URL, delete
 
 from posts.admin.model_views.base import BaseModelView
-from posts.persistence.data_mappers.posts_data_mapper import PostDataMapper
-from posts.persistence.models import PostOrm, PostTagOrm
+from posts.persistence.data_mappers.post_data_mapper import PostDataMapper
+from posts.persistence.models import PostOrm, PostTagOrm, SitePostOrm
 
 
 class PostAdmin(BaseModelView, model=PostOrm):  # type: ignore
@@ -21,6 +21,7 @@ class PostAdmin(BaseModelView, model=PostOrm):  # type: ignore
         PostOrm.active,
     ]
 
+    column_searchable_list = ["title", "content"]
     list_template = "sqladmin/list-posts.html"
     details_template = "sqladmin/details-post.html"
     edit_template = "sqladmin/edit-post.html"
@@ -59,6 +60,7 @@ class PostAdmin(BaseModelView, model=PostOrm):  # type: ignore
     @action(name="delete_all", label="Удалить (фильтр)", confirmation_message="Вы уверены?")
     async def delete_all_action(self, request: Request):
         async with self.session_maker(expire_on_commit=False) as session:
+            await session.execute(delete(SitePostOrm).where(self.filters_from_request(request)))
             await session.execute(delete(PostTagOrm).where(self.filters_from_request(request)))
             await session.execute(delete(self.model).where(self.filters_from_request(request)))
             await session.commit()

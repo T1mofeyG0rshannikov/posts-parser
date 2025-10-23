@@ -14,7 +14,6 @@ def get_unique_new_posts_zip_data() -> ZipFile:
 
     with ZipFile(zip_bytes, "w") as zip_file:
         for file_path in dir_path.glob("*.html"):
-            print(file_path)
             zip_file.write(file_path, arcname=file_path.name)
 
     zip_bytes.seek(0)
@@ -27,7 +26,6 @@ def get_new_posts_with_invalid_zip_data() -> ZipFile:
 
     with ZipFile(zip_bytes, "w") as zip_file:
         for file_path in dir_path.glob("*.html"):
-            print(file_path)
             zip_file.write(file_path, arcname=file_path.name)
 
     zip_bytes.seek(0)
@@ -37,7 +35,6 @@ def get_new_posts_with_invalid_zip_data() -> ZipFile:
 def get_new_posts_with_repeat_zip_data() -> ZipFile:
     dir_path = Path(__file__).parent.parent / "data" / "articles"
     files = list(dir_path.glob("*.html"))
-    print(files, "FILES")
 
     zip_bytes = io.BytesIO()
     with ZipFile(zip_bytes, "w") as zip_file:

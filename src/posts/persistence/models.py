@@ -36,6 +36,13 @@ class PostOrm(Model):
 
     active = Column(Boolean)
     tags = relationship("PostTagOrm", back_populates="post")
+    siteposts = relationship("SitePostOrm", back_populates="post")
+
+    def __str__(self):
+        if len(self.title) > 40:
+            return self.title[: 40 - 3] + "..."
+
+        return self.title
 
 
 class TagOrm(Model):
@@ -79,3 +86,30 @@ class ErrorLogOrm(Model):
     title = Column(String)
     message = Column(String)
     created_at = Column(TIMESTAMP(timezone=True), default=lambda: datetime.now(pytz.timezone("Europe/Moscow")))
+
+
+class SiteOrm(Model):
+    __tablename__ = "sites"
+
+    id = Column(Integer, index=True, primary_key=True)
+    username = Column(String)
+    password = Column(String)
+    address = Column(String)
+
+    siteposts = relationship("SitePostOrm", back_populates="site")
+
+    def __str__(self):
+        return self.address
+
+
+class SitePostOrm(Model):
+    __tablename__ = "siteposts"
+
+    id = Column(Integer, index=True, primary_key=True)
+    post_id = Column(Integer, ForeignKey("posts.id"))
+    post = relationship(PostOrm, back_populates="siteposts")
+
+    site_id = Column(Integer, ForeignKey("sites.id"))
+    site = relationship(SiteOrm, back_populates="siteposts")
+
+    sended = Column(Boolean, server_default="false")

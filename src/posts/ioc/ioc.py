@@ -1,19 +1,37 @@
+from collections.abc import AsyncIterable
+
+import httpx
 from dishka import Provider, Scope, from_context, provide
 from fastapi import FastAPI
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
+from redis import Redis # type: ignore
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from posts.admin.admin import CustomAdmin
 from posts.admin.auth.backend import AdminAuth
 from posts.admin.auth.login_factory.dishka_login_factory import DishkaLoginFactory
 from posts.admin.config import AdminConfig
 from posts.persistence.data_mappers.error_log_data_mapper import ErrorLogDataMapper
-from posts.persistence.data_mappers.posts_data_mapper import PostDataMapper
+from posts.persistence.data_mappers.post_data_mapper import PostDataMapper
+from posts.persistence.data_mappers.site_post_data_mapper import SitePostDataMapper
 from posts.persistence.data_mappers.tag_data_mapper import TagDataMapper
 from posts.persistence.data_mappers.user_data_mapper import UserDataMapper
-from posts.services import DbLogger
+from posts.persistence.redis_config import RedisConfig
+from posts.services.images_loader.config import PostsImagsLoaderConfig
+from posts.services.images_loader.images_loader import PostImagesLoader
+from posts.services.logger import DbLogger
+from posts.services.posts_sender.posts_sender import PostsSender
+from posts.services.posts_sender.send_single_post import SendSinglePostToSite
+from posts.services.wordpress_service.service import WordpressService
 from posts.usecases.create_user import CreateUser
-from posts.usecases.posts.avtivate import ActivatePost
+from posts.usecases.posts.activate import ActivatePost
 from posts.usecases.posts.deavtivate import DeactivatePost
+from posts.usecases.posts.parse_and_send.base import ParsePostsAndSendToSites
+from posts.usecases.posts.parse_and_send.parse_from_dir import (
+    ParsePostsFromDirctoryAndSendToSites,
+)
+from posts.usecases.posts.parse_and_send.parse_from_zip import (
+    ParsePostsFromZIPAndSendToSites,
+)
 from posts.usecases.posts.parsing.config import ParseConfig
 from posts.usecases.posts.parsing.db_writer_worker import DbWriterWorker
 from posts.usecases.posts.parsing.file_discoverers.directory_discoverer.config import (
@@ -25,7 +43,10 @@ from posts.usecases.posts.parsing.file_discoverers.directory_discoverer.director
 from posts.usecases.posts.parsing.parsers.directory_parser import (
     ParsePostsFromDirectory,
 )
+from posts.usecases.posts.parsing.parsers.zip_parser import ParsePostsFromZIP
 from posts.usecases.posts.persist_posts import PersistPosts
+from posts.usecases.posts.send_to_site.adapter import WordpressPostAdapter
+from posts.usecases.posts.send_to_site.usecase import SendPostsToSites
 from posts.usecases.tags.add_tag_to_post import AddTagToPost
 from posts.usecases.tags.delete_post_tag import DeletePostTag
 from posts.usecases.tags.get_all_tags import GetAllTags
@@ -53,8 +74,8 @@ class UsecasesProvider(Provider):
         return DirectoryDiscoverer(config=directory_discoverer_config, n_parser_workers=parse_config.N_PARSER_WORKERS)
 
     @provide(scope=Scope.SESSION)
-    def get_db_logger(self, error_log_data_mapper: ErrorLogDataMapper, transaction: AsyncSession) -> DbLogger:
-        return DbLogger(error_log_data_mapper=error_log_data_mapper, transaction=transaction)
+    def get_db_logger(self, error_log_data_mapper: ErrorLogDataMapper, session_maker: async_sessionmaker) -> DbLogger:
+        return DbLogger(error_log_data_mapper=error_log_data_mapper, session_maker=session_maker)
 
     @provide(scope=Scope.SESSION)
     def get_parse_posts_from_directory_interactor(
@@ -75,19 +96,76 @@ class UsecasesProvider(Provider):
             logger=logger,
         )
 
+    @provide(scope=Scope.REQUEST)
+    def get_parse_from_directory_and_send_posts(
+        self, parse_posts: ParsePostsFromDirectory, send_posts_to_sites: SendPostsToSites
+    ) -> ParsePostsFromDirctoryAndSendToSites:
+        return ParsePostsFromDirctoryAndSendToSites(parse_posts=parse_posts, send_posts=send_posts_to_sites)
+
+    @provide(scope=Scope.REQUEST)
+    async def get_parse_from_zip_and_send_posts(
+        self, parse_posts: ParsePostsFromZIP, send_posts_to_sites: SendPostsToSites
+    ) -> ParsePostsFromZIPAndSendToSites:
+        return ParsePostsFromZIPAndSendToSites(parse_posts=parse_posts, send_posts=send_posts_to_sites)
+
     @provide(scope=Scope.SESSION)
     async def get_create_user(
         self, session: AsyncSession, user_data_mapper: UserDataMapper, password_hasher: PasswordHasher
     ) -> CreateUser:
         return CreateUser(user_data_mapper=user_data_mapper, password_hasher=password_hasher, transaction=session)
 
-    @provide(scope=Scope.REQUEST)
-    def get_activate_post(self, posts_data_mapper: PostDataMapper, session: AsyncSession) -> ActivatePost:
-        return ActivatePost(posts_data_mapper=posts_data_mapper, transaction=session)
+    @provide(scope=Scope.APP)
+    def get_images_loadr_config(self) -> PostsImagsLoaderConfig:
+        return PostsImagsLoaderConfig()
 
     @provide(scope=Scope.REQUEST)
-    def get_deactivate_post(self, posts_data_mapper: PostDataMapper, session: AsyncSession) -> DeactivatePost:
-        return DeactivatePost(posts_data_mapper=posts_data_mapper, transaction=session)
+    async def get_images_loader(self, config: PostsImagsLoaderConfig) -> PostImagesLoader:
+        return PostImagesLoader(config=config)
+
+    @provide(scope=Scope.REQUEST)
+    async def get_posts_sender(
+        self,
+        wordpress_service: WordpressService,
+        logger: DbLogger,
+        images_loader: PostImagesLoader,
+        send_single_post: SendSinglePostToSite,
+    ) -> PostsSender:
+        return PostsSender(
+            images_loader=images_loader,
+            send_single_post=send_single_post,
+            logger=logger,
+            wordpress_service=wordpress_service,
+        )
+
+    @provide(scope=Scope.REQUEST)
+    def get_activate_post(
+        self,
+        site_data_mapper: SitePostDataMapper,
+        posts_sender: PostsSender,
+        posts_data_mapper: PostDataMapper,
+        session: AsyncSession,
+    ) -> ActivatePost:
+        return ActivatePost(
+            posts_data_mapper=posts_data_mapper,
+            transaction=session,
+            site_data_mapper=site_data_mapper,
+            posts_sender=posts_sender,
+        )
+
+    @provide(scope=Scope.REQUEST)
+    def get_deactivate_post(
+        self,
+        wordpress_service: WordpressService,
+        site_data_mapper: SitePostDataMapper,
+        posts_data_mapper: PostDataMapper,
+        session: AsyncSession,
+    ) -> DeactivatePost:
+        return DeactivatePost(
+            posts_data_mapper=posts_data_mapper,
+            wordpress_service=wordpress_service,
+            site_data_mapper=site_data_mapper,
+            transaction=session,
+        )
 
     @provide(scope=Scope.SESSION)
     def get_persist_posts(self, post_data_mapper: PostDataMapper, tag_data_mapper: TagDataMapper) -> PersistPosts:
@@ -116,6 +194,48 @@ class UsecasesProvider(Provider):
         self, post_data_mapper: PostDataMapper, tag_data_mapper: TagDataMapper, transaction: AsyncSession
     ) -> AddTagToPost:
         return AddTagToPost(post_data_mapper=post_data_mapper, tag_data_mapper=tag_data_mapper, transaction=transaction)
+
+    @provide(scope=Scope.APP)
+    def get_wordpress_post_adapter(self) -> WordpressPostAdapter:
+        return WordpressPostAdapter()
+
+    @provide(scope=Scope.REQUEST)
+    async def get_https_session(self) -> AsyncIterable[httpx.AsyncClient]:
+        async with httpx.AsyncClient() as session:
+            yield session
+
+    @provide(scope=Scope.APP)
+    def get_redis_config(self) -> RedisConfig:
+        return RedisConfig()
+
+    @provide(scope=Scope.APP)
+    def get_redis(self, config: RedisConfig) -> Redis:
+        return Redis(host=config.host, port=config.port, db=config.db, decode_responses=True)
+
+    @provide(scope=Scope.REQUEST)
+    def get_wordpress_service(self, session: httpx.AsyncClient, redis: Redis) -> WordpressService:
+        return WordpressService(session=session, redis=redis)
+
+    @provide(scope=Scope.REQUEST)
+    def get_send_single_post(
+        self, wordpress_service: WordpressService, adapter: WordpressPostAdapter, logger: DbLogger
+    ) -> SendSinglePostToSite:
+        return SendSinglePostToSite(wordpress_service=wordpress_service, adapter=adapter, logger=logger)
+
+    @provide(scope=Scope.REQUEST)
+    def get_send_posts_to_sites(
+        self,
+        wordpress_service: WordpressService,
+        site_post_data_mapper: SitePostDataMapper,
+        posts_sender: PostsSender,
+        transaction: AsyncSession,
+    ) -> SendPostsToSites:
+        return SendPostsToSites(
+            site_post_data_mapper=site_post_data_mapper,
+            wordpress_service=wordpress_service,
+            posts_sender=posts_sender,
+            transaction=transaction,
+        )
 
 
 class AppProvider(Provider):

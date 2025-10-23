@@ -1,6 +1,6 @@
 from posts.exceptions import PostNotFoundError, TagNotFoundError
 from posts.interfaces.transaction import Transaction
-from posts.persistence.data_mappers.posts_data_mapper import PostDataMapper
+from posts.persistence.data_mappers.post_data_mapper import PostDataMapper
 from posts.persistence.data_mappers.tag_data_mapper import TagDataMapper
 
 

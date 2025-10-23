@@ -5,9 +5,12 @@ from dishka import FromDishka
 from dishka.integrations.fastapi import inject
 from fastapi import APIRouter, UploadFile
 
-from posts.usecases.posts.avtivate import ActivatePost
+from posts.usecases.posts.activate import ActivatePost
 from posts.usecases.posts.deavtivate import DeactivatePost
-from posts.usecases.posts.parsing.parsers.zip_parser import ParsePostsFromZIP
+from posts.usecases.posts.parse_and_send.parse_from_zip import (
+    ParsePostsFromZIPAndSendToSites,
+)
+from posts.web.routes.base import UserAnnotation, admin_required
 
 # from posts.web.schemas.posts import ParseResponse
 
@@ -21,18 +24,23 @@ async def get_zip_file(file: UploadFile) -> ZipFile:
 
 @router.post("/parse", status_code=200)
 @inject
-async def parse_posts_handler(file: UploadFile, usecase: FromDishka[ParsePostsFromZIP]):
+@admin_required
+async def parse_posts_handler(
+    file: UploadFile, user: UserAnnotation, usecase: FromDishka[ParsePostsFromZIPAndSendToSites]
+):
     zip_file = await get_zip_file(file)
     return await usecase(zip_file)
 
 
 @router.post("/active")
 @inject
-async def activate_post_handler(id: int, usecase: FromDishka[ActivatePost]):
+@admin_required
+async def activate_post_handler(id: int, user: UserAnnotation, usecase: FromDishka[ActivatePost]):
     return await usecase(id)
 
 
 @router.post("/deactive")
 @inject
-async def deactivate_post_handler(id: int, usecase: FromDishka[DeactivatePost]):
+@admin_required
+async def deactivate_post_handler(id: int, user: UserAnnotation, usecase: FromDishka[DeactivatePost]):
     return await usecase(id)
