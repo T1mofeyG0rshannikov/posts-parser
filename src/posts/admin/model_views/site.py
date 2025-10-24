@@ -9,6 +9,7 @@ from posts.admin.model_views.base import BaseModelView
 from posts.ioc.db import DbProvider
 from posts.ioc.ioc import UsecasesProvider
 from posts.ioc.login import LoginProvider
+from posts.ioc.web import WebProvider
 from posts.persistence.models import SiteOrm
 from posts.usecases.posts.send_to_site.usecase import SendPostsToSites
 
@@ -25,14 +26,14 @@ class SiteAdmin(BaseModelView, model=SiteOrm):
 
     form = SiteCreateForm
 
-    @action(name="synchronize", label="Синхронизировать выбранные сайты", confirmation_message="Вы уверены?")
+    @action(name="synchronize", label="Sync", confirmation_message="Вы уверены?")
     async def synchronize_all_action(self, request: Request):
         pks = request.query_params.get("pks")
         if pks:
             pks_list = [int(pk) for pk in pks.split(",")]
 
         ids = pks_list
-        container = make_async_container(LoginProvider(), UsecasesProvider(), DbProvider())
+        container = make_async_container(LoginProvider(), WebProvider(), UsecasesProvider(), DbProvider())
         async with container() as request_container:
             usecase = await request_container.get(SendPostsToSites)
 

@@ -1,7 +1,5 @@
 import asyncio
 
-from posts.dto.post import Tag
-from posts.dto.site import Site
 from posts.interfaces.transaction import Transaction
 from posts.persistence.data_mappers.site_post_data_mapper import SitePostDataMapper
 from posts.services.posts_sender.posts_sender import PostsSender
@@ -46,7 +44,10 @@ class SendPostsToSites:
 
         await asyncio.gather(*get_wp_tags_tasks)
 
-        access_token = await self._wordpress_service.get_access_token(site)
+        access_tokens = dict()
+        for site in sites:
+            access_token = await self._wordpress_service.get_access_token(site)
+            access_tokens[site.address] = access_token
 
         async def send(site, posts, access_token):
             posts_sender_response = await self._posts_sender(site, posts, wordpress_tags, access_token)
@@ -61,12 +62,13 @@ class SendPostsToSites:
             posts = await self._data_mapper.filter_posts(site_id=site.id)
             print(len(posts), len(posts_without_site), "posts")
             posts = set(posts) | posts_without_site
+            print(len(posts), "posts")
             # posts_sender_response = await self._posts_sender(site, posts)
             # success_sended_posts_ids = posts_sender_response.success_sended_posts_ids
 
             # await self._data_mapper.change_sended(site.id, post_ids=success_sended_posts_ids)
             # await self._transaction.commit()
-            send_tasks.append(send(site, posts, access_token=access_token))
+            send_tasks.append(send(site, posts, access_token=access_tokens[site.address]))
 
         await asyncio.gather(*send_tasks)
         await self._transaction.commit()

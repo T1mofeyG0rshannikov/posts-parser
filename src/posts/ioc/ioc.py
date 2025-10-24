@@ -3,7 +3,7 @@ from collections.abc import AsyncIterable
 import httpx
 from dishka import Provider, Scope, from_context, provide
 from fastapi import FastAPI
-from redis import Redis # type: ignore
+from redis import Redis  # type: ignore
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from posts.admin.admin import CustomAdmin
@@ -16,6 +16,7 @@ from posts.persistence.data_mappers.site_post_data_mapper import SitePostDataMap
 from posts.persistence.data_mappers.tag_data_mapper import TagDataMapper
 from posts.persistence.data_mappers.user_data_mapper import UserDataMapper
 from posts.persistence.redis_config import RedisConfig
+from posts.services.delete_post_from_sites import DeletePostFromSites
 from posts.services.images_loader.config import PostsImagsLoaderConfig
 from posts.services.images_loader.images_loader import PostImagesLoader
 from posts.services.logger import DbLogger
@@ -143,9 +144,11 @@ class UsecasesProvider(Provider):
         site_data_mapper: SitePostDataMapper,
         posts_sender: PostsSender,
         posts_data_mapper: PostDataMapper,
+        wordpress_service: WordpressService,
         session: AsyncSession,
     ) -> ActivatePost:
         return ActivatePost(
+            wordpress_service=wordpress_service,
             posts_data_mapper=posts_data_mapper,
             transaction=session,
             site_data_mapper=site_data_mapper,
@@ -155,15 +158,13 @@ class UsecasesProvider(Provider):
     @provide(scope=Scope.REQUEST)
     def get_deactivate_post(
         self,
-        wordpress_service: WordpressService,
-        site_data_mapper: SitePostDataMapper,
+        delete_post_from_sites: DeletePostFromSites,
         posts_data_mapper: PostDataMapper,
         session: AsyncSession,
     ) -> DeactivatePost:
         return DeactivatePost(
             posts_data_mapper=posts_data_mapper,
-            wordpress_service=wordpress_service,
-            site_data_mapper=site_data_mapper,
+            delete_post_from_sites=delete_post_from_sites,
             transaction=session,
         )
 
@@ -201,7 +202,7 @@ class UsecasesProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     async def get_https_session(self) -> AsyncIterable[httpx.AsyncClient]:
-        async with httpx.AsyncClient() as session:
+        async with httpx.AsyncClient(timeout=60) as session:
             yield session
 
     @provide(scope=Scope.APP)
@@ -221,6 +222,17 @@ class UsecasesProvider(Provider):
         self, wordpress_service: WordpressService, adapter: WordpressPostAdapter, logger: DbLogger
     ) -> SendSinglePostToSite:
         return SendSinglePostToSite(wordpress_service=wordpress_service, adapter=adapter, logger=logger)
+
+    @provide(scope=Scope.REQUEST)
+    def get_delete_post_from_sites(
+        self,
+        site_data_mapper: SitePostDataMapper,
+        posts_data_mapper: PostDataMapper,
+        wordpress_service: WordpressService,
+    ) -> DeletePostFromSites:
+        return DeletePostFromSites(
+            site_data_mapper=site_data_mapper, posts_data_mapper=posts_data_mapper, wordpress_service=wordpress_service
+        )
 
     @provide(scope=Scope.REQUEST)
     def get_send_posts_to_sites(
