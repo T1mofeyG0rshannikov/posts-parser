@@ -12,7 +12,7 @@ class WordpressPostDTO:
     image_name: str
     tags: list[int]  # list of Wp tag ids
 
-    publish: str
+    date: str
 
     h1: str
 
