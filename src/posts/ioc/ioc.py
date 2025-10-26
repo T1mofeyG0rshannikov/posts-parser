@@ -17,16 +17,17 @@ from posts.persistence.data_mappers.tag_data_mapper import TagDataMapper
 from posts.persistence.data_mappers.user_data_mapper import UserDataMapper
 from posts.persistence.redis_config import RedisConfig
 from posts.services.delete_post_from_sites import DeletePostFromSites
+from posts.services.get_site_access_token import GetSiteAccessToken
 from posts.services.images_loader.config import PostsImagsLoaderConfig
 from posts.services.images_loader.images_loader import PostImagesLoader
 from posts.services.logger import DbLogger
 from posts.services.posts_sender.posts_sender import PostsSender
 from posts.services.posts_sender.send_single_post import SendSinglePostToSite
+from posts.services.wordpress_service.fetch_tags import FetchWordpressTags
 from posts.services.wordpress_service.service import WordpressService
 from posts.usecases.create_user import CreateUser
 from posts.usecases.posts.activate import ActivatePost
 from posts.usecases.posts.deavtivate import DeactivatePost
-from posts.usecases.posts.parse_and_send.base import ParsePostsAndSendToSites
 from posts.usecases.posts.parse_and_send.parse_from_dir import (
     ParsePostsFromDirctoryAndSendToSites,
 )
@@ -48,6 +49,7 @@ from posts.usecases.posts.parsing.parsers.zip_parser import ParsePostsFromZIP
 from posts.usecases.posts.persist_posts import PersistPosts
 from posts.usecases.posts.send_to_site.adapter import WordpressPostAdapter
 from posts.usecases.posts.send_to_site.usecase import SendPostsToSites
+from posts.usecases.posts.update import UpdatePost
 from posts.usecases.tags.add_tag_to_post import AddTagToPost
 from posts.usecases.tags.delete_post_tag import DeletePostTag
 from posts.usecases.tags.get_all_tags import GetAllTags
@@ -144,11 +146,13 @@ class UsecasesProvider(Provider):
         site_data_mapper: SitePostDataMapper,
         posts_sender: PostsSender,
         posts_data_mapper: PostDataMapper,
-        wordpress_service: WordpressService,
+        get_site_access_token: GetSiteAccessToken,
+        fetch_wordpress_tags: FetchWordpressTags,
         session: AsyncSession,
     ) -> ActivatePost:
         return ActivatePost(
-            wordpress_service=wordpress_service,
+            get_site_access_token=get_site_access_token,
+            fetch_wordpress_tags=fetch_wordpress_tags,
             posts_data_mapper=posts_data_mapper,
             transaction=session,
             site_data_mapper=site_data_mapper,
@@ -214,8 +218,12 @@ class UsecasesProvider(Provider):
         return Redis(host=config.host, port=config.port, db=config.db, decode_responses=True)
 
     @provide(scope=Scope.REQUEST)
-    def get_wordpress_service(self, session: httpx.AsyncClient, redis: Redis) -> WordpressService:
-        return WordpressService(session=session, redis=redis)
+    def get_access_token_service(self, wordpress_service: WordpressService, redis: Redis) -> GetSiteAccessToken:
+        return GetSiteAccessToken(wordpress_service=wordpress_service, redis=redis)
+
+    @provide(scope=Scope.REQUEST)
+    def get_wordpress_service(self) -> WordpressService:
+        return WordpressService()
 
     @provide(scope=Scope.REQUEST)
     def get_send_single_post(
@@ -229,23 +237,56 @@ class UsecasesProvider(Provider):
         site_data_mapper: SitePostDataMapper,
         posts_data_mapper: PostDataMapper,
         wordpress_service: WordpressService,
+        get_site_access_token: GetSiteAccessToken,
     ) -> DeletePostFromSites:
         return DeletePostFromSites(
-            site_data_mapper=site_data_mapper, posts_data_mapper=posts_data_mapper, wordpress_service=wordpress_service
+            site_data_mapper=site_data_mapper,
+            posts_data_mapper=posts_data_mapper,
+            wordpress_service=wordpress_service,
+            get_site_access_token=get_site_access_token,
         )
+
+    @provide(scope=Scope.REQUEST)
+    def get_ftch_wordpress_tags(self, wordpress_service: WordpressService) -> FetchWordpressTags:
+        return FetchWordpressTags(wordpress_service=wordpress_service)
 
     @provide(scope=Scope.REQUEST)
     def get_send_posts_to_sites(
         self,
-        wordpress_service: WordpressService,
+        get_site_access_token: GetSiteAccessToken,
+        fetch_wordpress_tags: FetchWordpressTags,
         site_post_data_mapper: SitePostDataMapper,
         posts_sender: PostsSender,
         transaction: AsyncSession,
     ) -> SendPostsToSites:
         return SendPostsToSites(
             site_post_data_mapper=site_post_data_mapper,
-            wordpress_service=wordpress_service,
+            get_site_access_token=get_site_access_token,
+            fetch_wordpress_tags=fetch_wordpress_tags,
             posts_sender=posts_sender,
+            transaction=transaction,
+        )
+
+    @provide(scope=Scope.REQUEST)
+    def get_update_post(
+        self,
+        post_data_mapper: PostDataMapper,
+        tag_data_mapper: TagDataMapper,
+        posts_sender: PostsSender,
+        site_data_mapper: SitePostDataMapper,
+        get_site_access_token: GetSiteAccessToken,
+        fetch_wordpress_tags: FetchWordpressTags,
+        delete_post_from_sites: DeletePostFromSites,
+        transaction: AsyncSession,
+    ) -> UpdatePost:
+        return UpdatePost(
+            post_data_mapper=post_data_mapper,
+            tag_data_mapper=tag_data_mapper,
+            posts_sender=posts_sender,
+            site_data_mapper=site_data_mapper,
+            get_site_access_token=get_site_access_token,
+            fetch_wordpress_tags=fetch_wordpress_tags,
+            delete_post_from_sites=delete_post_from_sites,
             transaction=transaction,
         )
 

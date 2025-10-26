@@ -5,8 +5,7 @@ from urllib.parse import urlencode
 from dishka import make_async_container
 from fastapi import Request
 from fastapi.responses import RedirectResponse
-from sqladmin import ModelView, action
-from sqladmin.helpers import slugify_class_name
+from sqladmin import action
 from sqlalchemy import URL, delete
 
 from posts.admin.model_views.base import BaseModelView
@@ -15,9 +14,9 @@ from posts.ioc.ioc import UsecasesProvider
 from posts.ioc.login import LoginProvider
 from posts.ioc.web import WebProvider
 from posts.persistence.data_mappers.post_data_mapper import PostDataMapper
-from posts.persistence.data_mappers.tag_data_mapper import TagDataMapper
 from posts.persistence.models import PostOrm, PostTagOrm, SitePostOrm
 from posts.services.delete_post_from_sites import DeletePostFromSites
+from posts.usecases.posts.update import UpdatePost
 
 
 class PostAdmin(BaseModelView, model=PostOrm):  # type: ignore
@@ -76,21 +75,12 @@ class PostAdmin(BaseModelView, model=PostOrm):  # type: ignore
     async def after_model_change(self, data, model, is_created, request):
         form = await request.form()
 
-        async with self.session_maker() as session:
-            tag_data_mapper = TagDataMapper(session)
-            request_tags_ids = [int(tag_id) for tag_id in form.get("tags", "").split(",")]
-            post_tags = await tag_data_mapper.filter(post_id=model.id)
-            post_tags_ids = [tag.id for tag in post_tags]
+        request_tags_ids = [int(tag_id) for tag_id in form.get("tags", "").split(",")]
 
-            for r_tag_id in request_tags_ids:
-                if r_tag_id not in post_tags_ids:
-                    await tag_data_mapper.save_post_relation(tag_id=r_tag_id, post_id=model.id)
-
-            for post_tag_id in post_tags_ids:
-                if post_tag_id not in request_tags_ids:
-                    await tag_data_mapper.delete_post_tag_relation(tag_id=post_tag_id, post_id=model.id)
-
-            await session.commit()
+        container = make_async_container(LoginProvider(), WebProvider(), UsecasesProvider(), DbProvider())
+        async with container() as request_container:
+            update_post = await request_container.get(UpdatePost)
+            await update_post(post_id=model.id, new_tags_ids=request_tags_ids)
 
     @action(name="delete_all", label="Удалить (фильтр)", confirmation_message="Вы уверены?")
     async def delete_all_action(self, request: Request):
@@ -100,7 +90,6 @@ class PostAdmin(BaseModelView, model=PostOrm):  # type: ignore
                 post_data_mapper = await request_container.get(PostDataMapper)
                 usecase = await request_container.get(DeletePostFromSites)
                 posts = await post_data_mapper.all_ids()
-                print(posts, "posts")
                 tasks = []
                 for post_id in posts:
                     tasks.append(usecase(post_id))

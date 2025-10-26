@@ -200,27 +200,31 @@
             </td>
             <td class="text-end">
               <script>
-                function activatePost(id){
+                function activatePost(id, elem){
                   fetch(`/posts/active?id=${id}`, {method: "POST"}).then(resposne => {
                     if (resposne.ok){
-                      document.getElementById(`active${id}`).ckeced = true
+                      elem.checked = true
+                      elem.setAttribute("data-active", "True");
                     }
                   })
                 }
 
-                function deactivatePost(id){
+                function deactivatePost(id, elem){
                   fetch(`/posts/deactive?id=${id}`, {method: "POST"}).then(resposne => {
                     if (resposne.ok){
-                      document.getElementById(`active${id}`).checked = false
+                      elem.checked = false
+                      elem.setAttribute("data-active", "False");
                     }
                   })
                 }
 
-                function changePostActive(postId, postActive){
+                function changePostActive(elem){
+                  const postId = elem.getAttribute("data-id")
+                  const postActive = elem.getAttribute("data-active")
                   if (postActive == "True"){
-                    deactivatePost(postId)
+                    deactivatePost(postId, elem)
                   } else {
-                    activatePost(postId)
+                    activatePost(postId, elem)
                   }
                 }
               </script>
@@ -246,7 +250,7 @@
             </td>
 
             <td>
-              <input type="checkbox" onclick="changePostActive({{row.id}}, '{{row.active}}')" {% if row.active %}checked{% endif %} id="active{{row.id}}">
+              <input type="checkbox" onclick="changePostActive(this)" data-id="{{row.id}}" data-active="{{row.active}}" {% if row.active %}checked{% endif %}>
             </td>
 
             {% for name in model_view._list_prop_names %}

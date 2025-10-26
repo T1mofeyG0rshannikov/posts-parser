@@ -21,8 +21,8 @@ class PostsSender:
     Используется внутри юзкейсов, отвечающих за массовую отправку постов постов.
 
     Параметры:
-        - images_loader (Po): асинхронный сервис, который по списку id возвращает dict {id: bytes}.
-        - send_single_post: сервис, отправляющий один пост на сайт.
+        - images_loader (PostImagesLoader): асинхронный сервис, который по списку id возвращает dict {id: bytes}.
+        - send_single_post (SendSinglePostToSite): сервис, отправляющий один пост на сайт.
 
     """
 
@@ -52,7 +52,7 @@ class PostsSender:
 
         send_tags_tasks = []
 
-        async def send_tag(site, tag, access_token):
+        async def send_tag(site: Site, tag: Tag, access_token: str):
             tag_response = await self._wordpress_service.send_tag(site, tag, access_token=access_token)
             if tag_response.success:
                 wordpress_tags.append(tag_response.data)

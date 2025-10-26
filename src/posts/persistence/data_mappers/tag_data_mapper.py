@@ -14,7 +14,7 @@ from posts.persistence.models import PostTagOrm, TagOrm
 
 
 class TagDataMapper(BaseDataMapper):
-    async def filter(self, post_id: int) -> None:
+    async def filter(self, post_id: int) -> list[Tag]:
         results = await self._session.execute(select(TagOrm).join(PostTagOrm).where(PostTagOrm.post_id == post_id))
         tags = results.scalars().all()
 

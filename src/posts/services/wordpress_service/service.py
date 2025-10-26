@@ -5,7 +5,6 @@ from dataclasses import asdict
 from urllib.parse import unquote
 
 import httpx
-from redis import Redis  # type: ignore
 
 from posts.dto.operation_result import OperationResult
 from posts.dto.post import Post, Tag
@@ -14,12 +13,6 @@ from posts.dto.wordpress_post import WordpressPostDTO
 
 
 class WordpressService:
-    def __init__(self, session: httpx.AsyncClient, redis: Redis, cache_key: str = "wp_access_tokens") -> None:
-        self._session = session
-        self._redis = redis
-        self._access_tokens: dict[str, str] = dict()
-        self._cache_key = cache_key
-
     async def fetch_access_token(self, site: Site) -> str:
         async with httpx.AsyncClient(timeout=60) as session:
             response = await session.post(
@@ -29,25 +22,9 @@ class WordpressService:
 
             return data["token"]
 
-    async def get_access_token(self, site: Site) -> str:
-        cached_token = self._access_tokens.get(site.address)
-        if cached_token:
-            return cached_token
-
-        cache_tokens = json.loads(self._redis.get(self._cache_key)) if self._redis.get(self._cache_key) else None
-        if cache_tokens is None or (cache_tokens and site.address not in cache_tokens):
-            access_token = await self.fetch_access_token(site)
-            self._access_tokens[site.address] = access_token
-            cache_tokens = cache_tokens | {site.address: access_token} if cache_tokens else {site.address: access_token}
-            self._redis.set(self._cache_key, json.dumps(cache_tokens), ex=60 * 5)
-
-            return access_token
-
-        return cache_tokens[site.address]
-
     async def all_tags(self, site: Site) -> list[Tag]:
         async with httpx.AsyncClient(timeout=30) as session:
-            tags = []
+            tags: list[Tag] = []
             page = 1
             while True:
                 response = await session.get(f"{site.address}/wp-json/wp/v2/tags?per_page=100&page={page}")
@@ -111,7 +88,7 @@ class WordpressService:
                 error_message = json.dumps(data, indent=2, ensure_ascii=False)
 
                 return OperationResult(success=False, error_message=f"Лог ошибки с сайта Wordpress: {error_message}")
-        except Exception as e:
+        except Exception:
             type, value, tb = sys.exc_info()
             traceback_str = "".join(traceback.format_exception(type, value, tb))
 
@@ -143,7 +120,7 @@ class WordpressService:
                 error_message = json.dumps(data, indent=2, ensure_ascii=False)
 
                 return OperationResult(success=False, error_message=f"Лог ошибки с сайта Wordpress: {error_message}")
-        except Exception as e:
+        except Exception:
             type, value, tb = sys.exc_info()
             traceback_str = "".join(traceback.format_exception(type, value, tb))
 
