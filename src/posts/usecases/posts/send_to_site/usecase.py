@@ -71,4 +71,4 @@ class SendPostsToSites:
 
         await asyncio.gather(*send_tasks)
         await self._transaction.commit()
-        print(time.time() - start)
+        print(time.time() - start, "time sended")

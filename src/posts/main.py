@@ -1,11 +1,11 @@
-from dishka import make_async_container, make_container
+from dishka import make_async_container
 from dishka.integrations import fastapi as fastapi_integration
 from fastapi import FastAPI
 from starlette.middleware.sessions import SessionMiddleware
 
 from posts.admin.config import AdminConfig
 from posts.admin.init import init_admin
-from posts.di import get_container
+from posts.di import get_sync_container
 from posts.ioc.db import DbProvider
 from posts.ioc.ioc import UsecasesProvider
 from posts.ioc.login import LoginProvider
@@ -16,7 +16,7 @@ from posts.web.routes.tags_route import router as tags_router
 
 app = FastAPI()
 
-container = get_container(app)
+container = get_sync_container(app)
 admin_config = container.get(AdminConfig)
 
 app.add_middleware(SessionMiddleware, secret_key=admin_config.secret_key)

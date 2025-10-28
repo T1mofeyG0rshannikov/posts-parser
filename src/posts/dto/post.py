@@ -32,6 +32,14 @@ class Post:
 
     active: bool
 
+    def __hash__(self):
+        return hash(self.id)
+
+    def __eq__(self, other):
+        if not isinstance(other, Post):
+            return NotImplemented
+        return self.id == other.id
+
 
 @dataclass
 class PostWithTags(Post):
@@ -39,6 +47,11 @@ class PostWithTags(Post):
 
     def __hash__(self):
         return hash(self.id)
+
+    def __eq__(self, other):
+        if not isinstance(other, Post):
+            return NotImplemented
+        return self.id == other.id
 
 
 @dataclass

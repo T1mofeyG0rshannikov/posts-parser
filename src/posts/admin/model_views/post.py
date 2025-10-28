@@ -16,6 +16,7 @@ from posts.ioc.web import WebProvider
 from posts.persistence.data_mappers.post_data_mapper import PostDataMapper
 from posts.persistence.models import PostOrm, PostTagOrm, SitePostOrm
 from posts.services.delete_post_from_sites import DeletePostFromSites
+from posts.usecases.posts.deavtivate import DeactivatePost
 from posts.usecases.posts.update import UpdatePost
 
 
@@ -37,6 +38,8 @@ class PostAdmin(BaseModelView, model=PostOrm):  # type: ignore
     column_details_exclude_list = ["tags", "id"]
     name = "Пост"
     name_plural = "Посты"
+
+    container = make_async_container(LoginProvider(), WebProvider(), UsecasesProvider(), DbProvider())
 
     def get_object_identifier(self, obj):
         return obj.id
@@ -66,21 +69,24 @@ class PostAdmin(BaseModelView, model=PostOrm):  # type: ignore
             return await data_mapper.get_with_tags(id=int(request.path_params["pk"]))
 
     async def on_model_delete(self, model: Any, request: Request) -> None:
-        container = make_async_container(LoginProvider(), WebProvider(), UsecasesProvider(), DbProvider())
-        async with container() as request_container:
+        async with self.container() as request_container:
             usecase = await request_container.get(DeletePostFromSites)
 
             await usecase(model.id)
 
-    async def after_model_change(self, data, model, is_created, request):
-        form = await request.form()
+    async def after_model_change(self, data, model: PostOrm, is_created, request):
+        if model.active:
+            form = await request.form()
 
-        request_tags_ids = [int(tag_id) for tag_id in form.get("tags", "").split(",")]
+            request_tags_ids = [int(tag_id) for tag_id in form.get("tags", "").split(",")]
 
-        container = make_async_container(LoginProvider(), WebProvider(), UsecasesProvider(), DbProvider())
-        async with container() as request_container:
-            update_post = await request_container.get(UpdatePost)
-            await update_post(post_id=model.id, new_tags_ids=request_tags_ids)
+            async with self.container() as request_container:
+                update_post = await request_container.get(UpdatePost)
+                await update_post(post_id=model.id, new_tags_ids=request_tags_ids)
+        else:
+            async with self.container() as request_container:
+                deactivate_post = await request_container.get(DeactivatePost)
+                await deactivate_post(model.id)
 
     @action(name="delete_all", label="Удалить (фильтр)", confirmation_message="Вы уверены?")
     async def delete_all_action(self, request: Request):

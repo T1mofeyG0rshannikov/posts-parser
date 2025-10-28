@@ -40,6 +40,7 @@ class SendSinglePostToSite:
 
         wordpress_post = self._adapter.execute(post=post, wp_tags=wordpress_tags, featured_media=featured_media)
         response = await self._wordpress_service.send_post(post=wordpress_post, site=site, access_token=access_token)
+        print(response, "RESP")
         if response.success:
             return BaseOperationResult(success=True)
         else:

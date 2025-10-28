@@ -17,6 +17,7 @@ class WordpressPostDTO:
     h1: str
 
     slug: str
+    meta: dict[str, str]
     status: str = "publish"
 
     @staticmethod

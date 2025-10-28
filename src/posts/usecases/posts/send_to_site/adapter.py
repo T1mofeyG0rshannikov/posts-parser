@@ -16,7 +16,7 @@ class WordpressPostAdapter:
         wp_tags_dict = {wp_tag.slug: wp_tag.id for wp_tag in wp_tags}
         tags = [wp_tags_dict[tag.slug.lower()] for tag in post.tags if tag.slug.lower() in wp_tags_dict]
         return WordpressPostDTO(
-            title=post.title,
+            title=post.h1,
             content=post.content,
             featured_media=featured_media,
             description=post.description,
@@ -25,4 +25,5 @@ class WordpressPostAdapter:
             date=self.date_to_iso_format(post.published),
             h1=post.h1,
             slug=WordpressPostDTO.generate_slug(post),
+            meta={"yoast_wpseo_title": post.title, "yoast_wpseo_metadesc": post.description},
         )

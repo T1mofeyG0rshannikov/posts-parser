@@ -44,14 +44,19 @@ class UpdatePost:
         await self._transaction.commit()
 
         updated_post = await self._post_data_mapper.get_with_tags(id=post_id)
-
+        print("updatd_post", updated_post)
         sites = await self._site_data_mapper.all_sites()
+        print(sites, "sites")
 
         wordpress_tags = await self._fetch_wordpress_tags(sites)
 
+        await self._delete_post_from_sites(post_id=post_id)
+
         for site in sites:
             access_token = await self._get_site_access_token(site)
-            await self._delete_post_from_sites(post_id=post_id)
+            print("deleteed post")
+            print("start send")
             await self._posts_sender(
                 site=site, posts=[updated_post], access_token=access_token, wordpress_tags=wordpress_tags[site.address]
             )
+            print("sended")

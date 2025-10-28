@@ -1,6 +1,6 @@
 import json
 
-from aioredis import Redis
+from redis import Redis  # type: ignore
 
 from posts.dto.site import Site
 from posts.services.wordpress_service.service import WordpressService

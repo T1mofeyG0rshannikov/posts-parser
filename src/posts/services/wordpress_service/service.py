@@ -107,6 +107,8 @@ class WordpressService:
     async def send_post(self, site: Site, post: WordpressPostDTO, access_token: str) -> OperationResult:
         try:
             async with httpx.AsyncClient(timeout=60) as session:
+                print(post, "POST")
+                print(site.address, "address")
                 response = await session.post(
                     f"{site.address}/wp-json/wp/v2/posts",
                     json=asdict(post),

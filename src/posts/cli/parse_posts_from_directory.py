@@ -1,17 +1,13 @@
 import asyncio
 
-from dishka import make_async_container
-
-from posts.ioc.db import DbProvider
-from posts.ioc.ioc import UsecasesProvider
-from posts.ioc.login import LoginProvider
+from posts.di import get_container
 from posts.usecases.posts.parse_and_send.parse_from_dir import (
     ParsePostsFromDirctoryAndSendToSites,
 )
 
 
 async def main():
-    container = make_async_container(LoginProvider(), UsecasesProvider(), DbProvider())
+    container = await get_container()
 
     async with container() as request_container:
         parse_posts = await request_container.get(ParsePostsFromDirctoryAndSendToSites)
