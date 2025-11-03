@@ -35,7 +35,8 @@ class PostAdmin(BaseModelView, model=PostOrm):  # type: ignore
     details_template = "sqladmin/details-post.html"
     edit_template = "sqladmin/edit-post.html"
     form_columns = ["h1", "title", "image", "description", "content", "content2", "active", "published"]
-    column_details_exclude_list = ["tags", "id"]
+    column_details_exclude_list = ["siteposts", "tags", "id"]
+
     name = "Пост"
     name_plural = "Посты"
 

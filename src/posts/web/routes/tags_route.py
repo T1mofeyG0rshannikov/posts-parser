@@ -1,20 +1,20 @@
 from dishka import FromDishka
 from dishka.integrations.fastapi import inject
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
 from posts.usecases.tags.add_tag_to_post import AddTagToPost
 from posts.usecases.tags.delete_post_tag import DeletePostTag
-from posts.usecases.tags.get_all_tags import GetAllTags
+from posts.usecases.tags.get_all_tags import FilterTags
 from posts.web.routes.base import UserAnnotation, admin_required
 from posts.web.schemas.tags import AllTagsResponse
 
 router = APIRouter(prefix="/tags", tags=["tags"])
 
 
-@router.get("/all", status_code=200, response_model=AllTagsResponse)
+@router.get("/filter", status_code=200, response_model=AllTagsResponse)
 @inject
-async def all_tags_handler(usecase: FromDishka[GetAllTags]) -> AllTagsResponse:
-    tags = await usecase()
+async def all_tags_handler(request: Request, usecase: FromDishka[FilterTags]) -> AllTagsResponse:
+    tags = await usecase(request.query_params.get("search"))
     return AllTagsResponse(tags=tags)
 
 

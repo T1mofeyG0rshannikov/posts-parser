@@ -1,4 +1,4 @@
-from sqlalchemy import delete, select
+from sqlalchemy import delete, or_, select
 from sqlalchemy.orm import selectinload
 
 from posts.dto.parse_posts import ParsedPostTagDTO
@@ -31,6 +31,13 @@ class TagDataMapper(BaseDataMapper):
 
         tag = result.scalar()
         return from_orm_to_tag_with_posts(tag) if tag else None
+
+    async def filter_by_search(self, search: str, limit: int = 10) -> list[Tag]:
+        results = await self._session.execute(
+            select(TagOrm).where(or_(TagOrm.name.icontains(search), TagOrm.slug.icontains(search))).limit(limit)
+        )
+        results = results.scalars().all()
+        return [from_orm_to_tag(tag) for tag in results]
 
     async def all(self) -> list[Tag]:
         results = await self._session.execute(select(TagOrm))

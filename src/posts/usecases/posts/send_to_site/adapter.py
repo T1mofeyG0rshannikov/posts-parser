@@ -14,7 +14,7 @@ class WordpressPostAdapter:
 
     def execute(self, post: PostWithTags, wp_tags: list[Tag], featured_media: int) -> WordpressPostDTO:
         wp_tags_dict = {wp_tag.slug: wp_tag.id for wp_tag in wp_tags}
-        tags = [wp_tags_dict[tag.slug.lower()] for tag in post.tags if tag.slug.lower() in wp_tags_dict]
+        tags = [wp_tags_dict[tag.slug] for tag in post.tags if tag.slug in wp_tags_dict]
         return WordpressPostDTO(
             title=post.h1,
             content=post.content,

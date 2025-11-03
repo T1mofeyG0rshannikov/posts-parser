@@ -8,9 +8,9 @@ from sqlalchemy import (
     Date,
     ForeignKey,
     Integer,
+    SmallInteger,
     String,
     Text,
-    Time,
 )
 from sqlalchemy.orm import relationship
 
@@ -95,6 +95,7 @@ class SiteOrm(Model):
     username = Column(String)
     password = Column(String)
     address = Column(String)
+    max_connections_limit = Column(SmallInteger, default=5)
 
     siteposts = relationship("SitePostOrm", back_populates="site")
 

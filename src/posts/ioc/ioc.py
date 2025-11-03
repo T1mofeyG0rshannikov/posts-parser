@@ -52,7 +52,7 @@ from posts.usecases.posts.send_to_site.usecase import SendPostsToSites
 from posts.usecases.posts.update import UpdatePost
 from posts.usecases.tags.add_tag_to_post import AddTagToPost
 from posts.usecases.tags.delete_post_tag import DeletePostTag
-from posts.usecases.tags.get_all_tags import GetAllTags
+from posts.usecases.tags.get_all_tags import FilterTags
 from posts.user.auth.jwt_processor import JwtProcessor
 from posts.user.password_hasher import PasswordHasher
 
@@ -132,8 +132,10 @@ class UsecasesProvider(Provider):
         logger: DbLogger,
         images_loader: PostImagesLoader,
         send_single_post: SendSinglePostToSite,
+        session_maker: async_sessionmaker[AsyncSession],
     ) -> PostsSender:
         return PostsSender(
+            session_maker=session_maker,
             images_loader=images_loader,
             send_single_post=send_single_post,
             logger=logger,
@@ -183,8 +185,8 @@ class UsecasesProvider(Provider):
         return DbWriterWorker(post_data_mapper=post_data_mapper, config=config, persist_posts=persist_posts)
 
     @provide(scope=Scope.REQUEST)
-    def get_all_tags(self, tag_data_mapper: TagDataMapper) -> GetAllTags:
-        return GetAllTags(tag_data_mapper=tag_data_mapper)
+    def get_all_tags(self, tag_data_mapper: TagDataMapper) -> FilterTags:
+        return FilterTags(tag_data_mapper=tag_data_mapper)
 
     @provide(scope=Scope.REQUEST)
     def get_delete_post_tag(

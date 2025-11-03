@@ -52,6 +52,7 @@
           <div>
             <p>Добавить тег</p>
             <div>
+              <input name="new-tag" placeholder="тег" />
               <select name="tags" id=""></select>
               <button class="add-tag" onclick="addTag()">Добавить</button>
             </div>
@@ -70,35 +71,26 @@
                 document.querySelector(".tags-wrapper").prepend(newTag);
               }
 
-
-                /*tagId = document.querySelector("select[name=tags]").value
-                tagName = document.querySelector("select[name=tags]").selectedOptions[0].text
-                postId = {{ obj.id}}
-                console.log(tagId, postId)
-                fetch(`/tags/add-to-post?tag_id=${tagId}&post_id=${postId}`, {
-                  method: "POST",
-                }).then(response => {
-                  if (response.ok){
-                    newTag = document.createElement("div")
-                    newTag.classList.add("tag")
-                    newTag.innerHTML = `${ tagName }
-            <span class="tag-remove" onclick="deleteTag(${postId}, ${tagId}, this)">&times;</span>`;
-                    document.querySelector(".tags-wrapper").prepend(newTag);
-                  }
-                })*/
-
-              function fetchTags(){
-                fetch("/tags/all").then(response => {
-                  if (response.ok){
-                    response.json().then(response => {
-                      response.tags.forEach(tag => {
-                        document.querySelector("select[name=tags]").innerHTML += `<option value="${tag.id}">${tag.name}</option>`
-                      });
-                    })
-                  }
-                })
+              const input = document.querySelector("input[name=new-tag]");
+              function fetchTags(search){
+                if (search){
+                  fetch(`/tags/filter/?search=${search}`).then(response => {
+                    if (response.ok){
+                      response.json().then(response => {
+                        let optionsHTML = '';
+                        response.tags.forEach(tag => {
+                          optionsHTML += `<option value="${tag.id}">${tag.name}</option>`
+                        });
+                        document.querySelector("select[name=tags]").innerHTML = optionsHTML
+                      })
+                    }
+                  })
+                }
               }
 
+              input.addEventListener("input", event => {
+                fetchTags(event.target.value)
+              })
               fetchTags()
               function deleteTag(postId, tagId, elem){
                 /*fetch(`/tags/delete-relation?post_id=${postId}&tag_id=${tagId}`, {

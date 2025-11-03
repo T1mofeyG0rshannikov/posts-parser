@@ -27,10 +27,7 @@ class SendPostsToSites:
     async def _send_task(
         self, site: Site, posts: list[PostWithTags], access_token: str, wordpress_tags: list[Tag]
     ) -> None:
-        posts_sender_response = await self._posts_sender(site, posts, wordpress_tags, access_token)
-        success_sended_posts_ids = posts_sender_response.success_sended_posts_ids
-
-        await self._data_mapper.change_sended(site.id, post_ids=success_sended_posts_ids)
+        await self._posts_sender(site, posts, wordpress_tags, access_token)
 
     async def __call__(self, site_ids: list[int] | None = None):
         import time
@@ -56,11 +53,10 @@ class SendPostsToSites:
             posts_without_site = await self._data_mapper.filter_posts_without_site(site_id=site.id)
 
             await self._data_mapper.bulk_create_site_posts_relation(site_id=site.id, posts=posts_without_site)
+            await self._transaction.commit()
             posts = await self._data_mapper.filter_posts(site_id=site.id)
             print(len(posts), len(posts_without_site), "posts")
-            print([post.id for post in posts], "pppp")
-            print([post.id for post in posts_without_site], "zzzz")
-            posts = set(posts) | set(posts_without_site)
+            posts = list(set(posts) | set(posts_without_site))
             print(len(posts), "posts")
 
             send_tasks.append(
@@ -70,5 +66,4 @@ class SendPostsToSites:
             )
 
         await asyncio.gather(*send_tasks)
-        await self._transaction.commit()
         print(time.time() - start, "time sended")

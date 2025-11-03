@@ -1,7 +1,7 @@
 from dataclasses import asdict
 
 from sqlalchemy import select, update
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 
 from posts.dto.parse_posts import ParsedPostDTO
 from posts.dto.post import Post, PostWithTags
@@ -22,7 +22,10 @@ class PostDataMapper(BaseDataMapper):
 
     async def get_with_tags(self, id: int) -> PostWithTags | None:
         result = await self._session.execute(
-            select(PostOrm).options(joinedload(PostOrm.tags).joinedload(PostTagOrm.tag)).where(PostOrm.id == id)
+            select(PostOrm)
+            .options(selectinload(PostOrm.tags).selectinload(PostTagOrm.tag))
+            .where(PostOrm.id == id)
+            .distinct()
         )
 
         post = result.scalar()

@@ -1,7 +1,5 @@
 import asyncio
 import logging
-import sys
-import traceback
 from concurrent.futures import ThreadPoolExecutor
 
 from posts.interfaces.logger import Logger
@@ -61,6 +59,7 @@ class ParserWorker:
                 break
 
             parsed_response = await loop.run_in_executor(self._executor, parse_html, html)
+
             if not parsed_response.success:
                 await self._parsed_q.put(0)
                 await invalid_callback(in_lock=True)

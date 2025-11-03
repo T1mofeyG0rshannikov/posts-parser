@@ -1,16 +1,25 @@
 from sqlalchemy import exists, select, update
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import selectinload
 
 from posts.dto.post import PostWithTags
+from posts.dto.site import Site
 from posts.persistence.data_mappers.base import BaseDataMapper
 from posts.persistence.mappers.post_with_tags import from_orm_to_post_with_tags
 from posts.persistence.models import PostOrm, PostTagOrm, SiteOrm, SitePostOrm
 
 
 class SitePostDataMapper(BaseDataMapper):
-    async def all_sites(self) -> list[SiteOrm]:
+    async def all_sites(self) -> list[Site]:
         result = await self._session.execute(select(SiteOrm))
-        return result.scalars().all()
+        return [
+            Site(
+                id=site.id,
+                username=site.username,
+                password=site.password,
+                address=site.address,
+            )
+            for site in result.scalars().all()
+        ]
 
     async def filter_sites(self, ids: list[int]) -> list[SiteOrm]:
         result = await self._session.execute(select(SiteOrm).where(SiteOrm.id.in_(ids)))
@@ -36,7 +45,7 @@ class SitePostDataMapper(BaseDataMapper):
 
         stmt = (
             select(PostOrm)
-            .options(joinedload(PostOrm.tags).joinedload(PostTagOrm.tag), joinedload(PostOrm.siteposts))
+            .options(selectinload(PostOrm.tags).joinedload(PostTagOrm.tag), selectinload(PostOrm.siteposts))
             .where(~exists(subq), PostOrm.active == active)
             .distinct()
         )
@@ -50,7 +59,7 @@ class SitePostDataMapper(BaseDataMapper):
         results = await self._session.execute(
             select(PostOrm)
             .join(PostOrm.siteposts)
-            .options(joinedload(PostOrm.tags).joinedload(PostTagOrm.tag), joinedload(PostOrm.siteposts))
+            .options(selectinload(PostOrm.tags).joinedload(PostTagOrm.tag), selectinload(PostOrm.siteposts))
             .where(SitePostOrm.site_id == site_id, SitePostOrm.sended == sended, PostOrm.active == active)
             .distinct()
         )

@@ -48,6 +48,7 @@ class DbWriterWorker:
                     if batch:
                         try:
                             await self._persist_posts(batch, tags_dict=tags_dict)
+                            print("send_in_db", len(batch))
                             await inserted_callback(value=len(batch), in_lock=True)
                             batch.clear()
                         except Exception as e:
@@ -67,5 +68,6 @@ class DbWriterWorker:
                 self._parsed_q.task_done()
 
                 if len(batch) >= self._config.BATCH_SIZE:
-                    await self._data_mapper.bulk_save(batch)
+                    await self._persist_posts(batch, tags_dict=tags_dict)
+                    print("send_in_db", len(batch))
                     batch.clear()

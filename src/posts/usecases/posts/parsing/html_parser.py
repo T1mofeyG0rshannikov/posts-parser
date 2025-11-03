@@ -5,7 +5,7 @@ import traceback
 from dataclasses import dataclass
 from datetime import datetime
 
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Comment
 
 from posts.dto.parse_posts import ParsedPostDTO, ParsedPostTagDTO
 
@@ -17,16 +17,23 @@ class ParseHtmlResponse:
     error_message: str | None = None
 
 
+def remove_comments(soup: BeautifulSoup):
+    for comment in soup.find_all(string=lambda text: isinstance(text, Comment)):
+        comment.extract()
+
+
 def parse_html(html: str) -> ParseHtmlResponse:
-    soup = BeautifulSoup(html, "lxml")
-
-    print_button = soup.select_one("#poteme + hr + a")
-    match = re.search(r'href="([^"]*)"', str(print_button))
-    print_button_href = match.group(1)  # type: ignore
-
-    post_id = int(print_button_href.split("/")[2].split("-")[0])
-
+    post_id = "Неизвестный id (не получилосб извлечь из-за ошибки)"
     try:
+        soup = BeautifulSoup(html, "lxml")
+        remove_comments(soup)
+        print_button = soup.select_one("#poteme + hr + a")
+        match = re.search(r'href="([^"]*)"', str(print_button))
+
+        print_button_href = match.group(1)  # type: ignore
+
+        post_id = int(print_button_href.split("/")[2].split("-")[0])
+
         title = soup.title.string
         image = soup.select_one('link[rel="image_src"]')["href"]
         h1 = soup.find("h1").text
@@ -50,12 +57,7 @@ def parse_html(html: str) -> ParseHtmlResponse:
         img_wrap.decompose()
 
         content = "".join(str(x) for x in parent.contents)
-        content = content.replace("""<div class="clear"></div>""", "")
-        content = content.replace("""K1 2019 adaptive""", "").strip()
-        idx = content.rfind("</p>")
-
-        if idx != -1:
-            content = content[: idx + len("</p>")]  # обрезаем до конца </p>
+        content = content.strip()
 
         content2 = str(soup)
 

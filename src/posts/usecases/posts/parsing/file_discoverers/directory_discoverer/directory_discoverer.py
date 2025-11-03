@@ -23,7 +23,7 @@ class DirectoryDiscoverer(FileDiscoverer):
 
                 async with aiofiles.open(path, "r", encoding="utf-8", errors="ignore") as f:
                     html = await f.read()
-
+                print(fn)
                 await self.file_q.put(html)
 
         for _ in range(self._N_PARSER_WORKERS):

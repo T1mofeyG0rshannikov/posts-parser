@@ -18,6 +18,15 @@ cd src
 python -m posts.cli.create_admin_user
 ```
 
+
+### Создание администратора (консольная команда):
+
+```bash
+source your_env
+cd src
+python -m posts.sync_from_directory
+```
+
 ### Описание процедуры запуска парсинга
 
 В .env файле указывается путь к директории с html постами

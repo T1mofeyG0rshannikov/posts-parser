@@ -29,18 +29,24 @@ class SendSinglePostToSite:
     async def __call__(
         self, site: Site, post: PostWithTags, wordpress_tags: list[Tag], access_token: str, image: bytes | None = None
     ) -> BaseOperationResult:
+        featured_media = None
+
         if image is not None:
             image_name = f"{post.id}.jpg"
 
-            featured_media = await self._wordpress_service.send_post_image(
+            featured_media_response = await self._wordpress_service.send_post_image(
                 site, image_name, image, access_token=access_token
             )
-        else:
-            featured_media = None
+
+            if featured_media_response.success:
+                featured_media = featured_media_response.data
+            else:
+                return BaseOperationResult(success=False)
 
         wordpress_post = self._adapter.execute(post=post, wp_tags=wordpress_tags, featured_media=featured_media)
+
         response = await self._wordpress_service.send_post(post=wordpress_post, site=site, access_token=access_token)
-        print(response, "RESP")
+
         if response.success:
             return BaseOperationResult(success=True)
         else:

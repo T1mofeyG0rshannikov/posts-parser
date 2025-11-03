@@ -54,3 +54,7 @@ class TagAdmin(BaseModelView, model=TagOrm):  # type: ignore
             data_mapper = TagDataMapper(session)
 
             return await data_mapper.get_with_posts(id=int(request.path_params["pk"]))
+
+
+class PostTagAdmin(BaseModelView, model=PostTagOrm):
+    column_list = [PostTagOrm.id, PostTagOrm.post_id, PostTagOrm.tag_id]
