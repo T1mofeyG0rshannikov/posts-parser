@@ -24,7 +24,7 @@ python -m posts.cli.create_admin_user
 ```bash
 source your_env
 cd src
-python -m posts.sync_from_directory
+python -m posts.cli.sync_from_directory
 ```
 
 ### Описание процедуры запуска парсинга
